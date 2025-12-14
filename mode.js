@@ -32,39 +32,55 @@ export async function handleChat(message) {
   }
 
   // --------------------
-  // Try Hugging Face as fallback
-  // --------------------
-  try {
-    const hfRes = await fetch(
-      'https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.HF_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          inputs: message,
-          parameters: {
-            max_new_tokens: 300,
-            temperature: 0.7
-          }
-        })
-      }
-    );
+// Try Hugging Face as fallback
+// --------------------
+try {
+  const hfRes = await fetch(
+    'https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.HF_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: message,
+        parameters: {
+          max_new_tokens: 300,
+          temperature: 0.7
+        }
+      })
+    }
+  );
 
-    const hfData = await hfRes.json();
-
-    if (Array.isArray(hfData) && hfData[0]?.generated_text) return hfData[0].generated_text;
-    if (hfData?.generated_text) return hfData.generated_text;
-    if (hfData?.error) console.error('HF error:', hfData.error);
-
-    console.warn('HF failed, returning dummy response');
-    return `Hi! You said: "${message}"`;
-  } catch (err) {
-    console.error('HF completely failed', err.message);
-    return `Hi! You said: "${message}"`; // Always respond with dummy
+  // Check if response is OK
+  if (!hfRes.ok) {
+    const text = await hfRes.text(); // capture raw text if not JSON
+    console.error('HF API error', hfRes.status, text);
+    throw new Error('HF API request failed');
   }
+
+  // Parse JSON safely
+  let hfData;
+  try {
+    hfData = await hfRes.json();
+  } catch (jsonErr) {
+    console.error('HF response not JSON:', await hfRes.text());
+    throw new Error('HF JSON parse failed');
+  }
+
+  // Return generated text if available
+  if (Array.isArray(hfData) && hfData[0]?.generated_text) return hfData[0].generated_text;
+  if (hfData?.generated_text) return hfData.generated_text;
+  if (hfData?.error) console.error('HF error:', hfData.error);
+
+  // Fallback to dummy if HF returns no usable text
+  console.warn('HF returned no text, using dummy response');
+  return `Hi! You said: "${message}"`;
+} catch (err) {
+  console.error('HF completely failed', err.message);
+  // Always return dummy if everything fails
+  return `Hi! You said: "${message}"`;
 }
 
 /* ======================
