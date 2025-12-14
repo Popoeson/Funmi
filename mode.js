@@ -1,10 +1,10 @@
 // mode.js
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 // --------------------
 // Chat Mode
 // --------------------
-async function handleChat(message) {
+export async function handleChat(message) {
   try {
     // Primary: Groq
     const groqResponse = await fetch('https://api.groq.ai/v1/chat', {
@@ -42,7 +42,7 @@ async function handleChat(message) {
 // --------------------
 // Image Generation
 // --------------------
-async function handleImage(message) {
+export async function handleImage(message) {
   try {
     // Primary: Flux (via Black Forest)
     const fluxResponse = await fetch('https://api.blackforest.ai/v1/generate', {
@@ -87,7 +87,7 @@ async function handleImage(message) {
 // --------------------
 // Web / Research
 // --------------------
-async function handleSearch(message, mode) {
+export async function handleSearch(message, mode) {
   try {
     if (mode === 'Research') {
       // Primary: Exa
@@ -128,14 +128,7 @@ async function handleSearch(message, mode) {
 // --------------------
 // File Analysis
 // --------------------
-async function handleFile(file) {
+export async function handleFile(file) {
   // TODO: implement file analysis logic here
   return `File analysis placeholder`;
-}
-
-module.exports = {
-  handleChat,
-  handleImage,
-  handleSearch,
-  handleFile
-};
+        }
