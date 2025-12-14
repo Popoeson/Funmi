@@ -1,13 +1,14 @@
 // server.js
-const express = require('express');
-const cors = require('cors');
-const { MongoClient } = require('mongodb');
-const { createClient } = require('@supabase/supabase-js');
-const cloudinary = require('cloudinary').v2;
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import { MongoClient } from 'mongodb';
+import { createClient } from '@supabase/supabase-js';
+import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Import routes
-const routes = require('./routes');
+import routes from './routes.js';
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -23,6 +24,8 @@ mongoClient.connect().then(() => {
   db = mongoClient.db('funmi');
   app.locals.db = db; // pass db to routes
   console.log('Connected to MongoDB');
+}).catch(err => {
+  console.error('MongoDB connection failed:', err.message);
 });
 
 // Supabase client
@@ -43,4 +46,5 @@ app.use('/api', routes);
 // Health check
 app.get('/', (req, res) => res.send('Funmi Backend Running'));
 
+// Start server
 app.listen(port, () => console.log(`Funmi backend running on port ${port}`));
