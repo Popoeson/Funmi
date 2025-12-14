@@ -82,7 +82,6 @@ try {
   // Always return dummy if everything fails
   return `Hi! You said: "${message}"`;
 }
-
 /* ======================
    IMAGE GENERATION
 ====================== */
