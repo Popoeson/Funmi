@@ -1,0 +1,320 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Funmi – AI Assistant</title>  <!-- Icons -->  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />  <!-- Google Font -->  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">  <style>
+    :root {
+      --glass-light: rgba(255, 255, 255, 0.55);
+      --glass-dark: rgba(30, 30, 30, 0.45);
+      --glass-border-light: rgba(255, 255, 255, 0.8);
+      --glass-border-dark: rgba(255, 255, 255, 0.18);
+      --blur: blur(20px);
+      --shadow-light: 0 8px 30px rgba(0,0,0,0.08);
+      --shadow-dark: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: radial-gradient(circle at center, #ffffff 0%, #f0f0f0 60%, #d8d8d8 100%);
+      transition: background 0.4s ease;
+      overflow: hidden;
+    }
+
+    body.dark {
+      background: radial-gradient(circle at center, #2a2f34 0%, #1f2428 100%);
+      color: #fff;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -260px;
+      width: 260px;
+      height: 100vh;
+      background: var(--glass-light);
+      backdrop-filter: var(--blur);
+      border-right: 1px solid var(--glass-border-light);
+      border-radius: 0 20px 20px 0;
+      padding: 20px;
+      transition: left 0.3s ease;
+      z-index: 10;
+    }
+
+    body.dark .sidebar {
+      background: var(--glass-dark);
+      border-right: 1px solid var(--glass-border-dark);
+    }
+
+    .sidebar.open { left: 0; }
+
+    .sidebar h3 { margin-top: 0; }
+
+    .chat-session {
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+
+    .chat-session:hover { background: rgba(255,255,255,0.25); }
+
+    /* Top Bar */
+    .top-bar {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 10px;
+    }
+
+    .icon-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--glass-light);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border-light);
+      box-shadow: var(--shadow-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    body.dark .icon-btn {
+      background: var(--glass-dark);
+      border: 1px solid var(--glass-border-dark);
+      box-shadow: var(--shadow-dark);
+      color: #fff;
+    }
+
+    /* Chat Area */
+    .chat-area {
+      height: calc(100vh - 160px);
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .message {
+      max-width: 70%;
+      margin-bottom: 12px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: var(--glass-light);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border-light);
+      box-shadow: var(--shadow-light);
+    }
+
+    body.dark .message {
+      background: var(--glass-dark);
+      border: 1px solid var(--glass-border-dark);
+      box-shadow: var(--shadow-dark);
+    }
+
+    .message.user { margin-left: auto; }
+
+    /* Center Welcome */
+    .center {
+      height: calc(100vh - 160px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .logo img { width: 80px; margin-bottom: 10px; }
+
+    /* Input Bar */
+    .input-bar {
+      padding: 15px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--glass-light);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border-light);
+      box-shadow: var(--shadow-light);
+      border-radius: 18px;
+      padding: 10px;
+    }
+
+    body.dark .input-wrapper {
+      background: var(--glass-dark);
+      border: 1px solid var(--glass-border-dark);
+      box-shadow: var(--shadow-dark);
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      resize: none;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 15px;
+      min-height: 40px;
+      max-height: 220px;
+      color: inherit;
+    }
+
+    .send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--glass-light);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-light);
+    }
+
+    body.dark .send-btn {
+      background: var(--glass-dark);
+      border: 1px solid var(--glass-border-dark);
+      box-shadow: var(--shadow-dark);
+      color: #fff;
+    }
+
+    /* Mode Indicator */
+    .mode-indicator {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    /* Mode Menu */
+    .mode-menu {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      background: var(--glass-light);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border-light);
+      border-radius: 14px;
+      padding: 10px;
+      display: none;
+    }
+
+    body.dark .mode-menu {
+      background: var(--glass-dark);
+      border: 1px solid var(--glass-border-dark);
+    }
+
+    .mode-menu div {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+
+    .mode-menu div:hover { background: rgba(255,255,255,0.25); }
+
+  </style></head>
+<body><!-- Sidebar --><div class="sidebar" id="sidebar">
+  <h3>Chats</h3>
+  <div class="chat-session">New Chat</div>
+  <div class="chat-session">Session 1</div>
+</div><!-- Top Bar --><div class="top-bar">
+  <div class="icon-btn" id="menuBtn"><i class="fas fa-bars"></i></div>
+  <div class="icon-group">
+    <div class="icon-btn" id="themeBtn"><i class="fas fa-moon"></i></div>
+    <div class="icon-btn" id="profileBtn"><i class="fas fa-user"></i></div>
+  </div>
+</div><!-- Welcome --><div class="center" id="welcome">
+  <div class="logo"><img src="funmi-logo.png" alt="Funmi"></div>
+  <h2>Welcome, User</h2>
+  <p>What’s today’s task?</p>
+</div><!-- Chat Area --><div class="chat-area" id="chatArea" style="display:none"></div><!-- Mode Indicator --><div class="mode-indicator" id="modeIndicator">Mode: Default</div><!-- Input Bar --><div class="input-bar">
+  <div class="icon-btn"><i class="fas fa-plus"></i></div>  <div class="input-wrapper">
+    <textarea id="input" placeholder="Ask Funmi..."></textarea>
+    <div class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></div>
+  </div>  <div class="icon-btn" id="modeBtn"><i class="fas fa-sliders"></i></div>
+</div><!-- Mode Menu --><div class="mode-menu" id="modeMenu">
+  <div data-mode="Default">Default</div>
+  <div data-mode="Generate Image">Generate Image</div>
+  <div data-mode="Analyze Files">Analyze Files</div>
+  <div data-mode="Research">Research</div>
+  <div data-mode="Web Search">Web Search</div>
+</div><script>
+  const sidebar = document.getElementById('sidebar');
+  const menuBtn = document.getElementById('menuBtn');
+  const themeBtn = document.getElementById('themeBtn');
+  const modeBtn = document.getElementById('modeBtn');
+  const modeMenu = document.getElementById('modeMenu');
+  const modeIndicator = document.getElementById('modeIndicator');
+  const input = document.getElementById('input');
+  const welcome = document.getElementById('welcome');
+  const chatArea = document.getElementById('chatArea');
+  const sendBtn = document.getElementById('sendBtn');
+
+  menuBtn.onclick = () => sidebar.classList.toggle('open');
+  themeBtn.onclick = () => document.body.classList.toggle('dark');
+  modeBtn.onclick = () => modeMenu.style.display = modeMenu.style.display === 'block' ? 'none' : 'block';
+
+  modeMenu.querySelectorAll('div').forEach(item => {
+    item.onclick = () => {
+      modeIndicator.textContent = 'Mode: ' + item.dataset.mode;
+      modeMenu.style.display = 'none';
+    };
+  });
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  });
+
+  function sendMessage() {
+    if (!input.value.trim()) return;
+
+    welcome.style.display = 'none';
+    chatArea.style.display = 'block';
+
+    const msg = document.createElement('div');
+    msg.className = 'message user';
+    msg.textContent = input.value;
+    chatArea.appendChild(msg);
+    input.value = '';
+    input.style.height = 'auto';
+  }
+
+  sendBtn.onclick = sendMessage;
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Enter just adds a new line
+      input.value += '\n';
+    }
+  });
+
+  // Close sidebar when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
+      sidebar.classList.remove('open');
+    }
+  });
+</script></body>
+</html>
