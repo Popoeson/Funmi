@@ -1,134 +1,141 @@
 // mode.js
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
-// --------------------
-// Chat Mode
-// --------------------
+/* =====================================================
+   CHAT (Groq → HF fallback)
+===================================================== */
 export async function handleChat(message) {
   try {
-    // Primary: Groq
-    const groqResponse = await fetch('https://api.groq.ai/v1/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-      },
-      body: JSON.stringify({ input: message })
-    });
-    const data = await groqResponse.json();
-    return data.output || `Groq response placeholder: ${message}`;
-  } catch (err) {
-    console.error('Groq failed, falling back to Hugging Face', err.message);
-    try {
-      // Fallback: Hugging Face Mistral 7B Instruct
-      const hfResponse = await fetch('https://api-inference.huggingface.co/models/mistral7b-instruct', {
-        method: 'POST',
+    const res = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${process.env.HF_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ inputs: message })
-      });
-      const hfData = await hfResponse.json();
-      if (Array.isArray(hfData)) return hfData[0]?.generated_text || `HF placeholder: ${message}`;
-      return hfData.generated_text || `HF placeholder: ${message}`;
-    } catch (err2) {
-      console.error('Hugging Face also failed', err2.message);
-      return `Sorry, I couldn't generate a response at the moment.`;
-    }
-  }
-}
-
-// --------------------
-// Image Generation
-// --------------------
-export async function handleImage(message) {
-  try {
-    // Primary: Flux (via Black Forest)
-    const fluxResponse = await fetch('https://api.blackforest.ai/v1/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.FLUX_API_KEY}`
-      },
-      body: JSON.stringify({
-        prompt: message,
-        size: '1024x1024'
-      })
-    });
-    const fluxData = await fluxResponse.json();
-    return fluxData.url || `Flux image placeholder for: ${message}`;
-  } catch (err) {
-    console.error('Flux failed, fallback to SDXL/Stable Diffusion', err.message);
-    try {
-      // Fallback: SDXL (Stability API)
-      const sdxlResponse = await fetch('https://api.stability.ai/v1/generation/sdxl-v1-0/text-to-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.STABILITY_API_KEY}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          text_prompts: [{ text: message }],
+          model: "llama3-8b-8192",
+          messages: [{ role: "user", content: message }],
+        }),
+      }
+    );
+
+    const data = await res.json();
+    return data.choices[0].message.content;
+  } catch (err) {
+    console.error("Groq failed → HF fallback", err.message);
+
+    const hfRes = await fetch(
+      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: message }),
+      }
+    );
+
+    const hfData = await hfRes.json();
+    return Array.isArray(hfData)
+      ? hfData[0].generated_text
+      : hfData.generated_text;
+  }
+}
+
+/* =====================================================
+   IMAGE (FLUX → SDXL fallback)
+===================================================== */
+export async function handleImage(prompt) {
+  try {
+    const res = await fetch("https://api.blackforest.ai/v1/generate", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.FLUX_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        width: 1024,
+        height: 1024,
+      }),
+    });
+
+    const data = await res.json();
+
+    // FLUX usually returns base64
+    return {
+      type: "image",
+      content: `data:image/png;base64,${data.images[0].base64}`,
+    };
+  } catch (err) {
+    console.error("Flux failed → SDXL fallback", err.message);
+
+    const res = await fetch(
+      "https://api.stability.ai/v1/generation/sdxl-v1-0/text-to-image",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text_prompts: [{ text: prompt }],
           width: 1024,
           height: 1024,
-          samples: 1
-        })
-      });
-      const sdxlData = await sdxlResponse.json();
-      return sdxlData.artifacts?.[0]?.url || `SDXL image placeholder for: ${message}`;
-    } catch (err2) {
-      console.error('SDXL failed', err2.message);
-      return `Sorry, I couldn't generate an image at the moment.`;
-    }
+          samples: 1,
+        }),
+      }
+    );
+
+    const data = await res.json();
+    return {
+      type: "image",
+      content: `data:image/png;base64,${data.artifacts[0].base64}`,
+    };
   }
 }
 
-// --------------------
-// Web / Research
-// --------------------
-export async function handleSearch(message, mode) {
-  try {
-    if (mode === 'Research') {
-      // Primary: Exa
-      const exaResponse = await fetch(`https://api.exa.com/v1/search?q=${encodeURIComponent(message)}`, {
-        headers: { 'Authorization': `Bearer ${process.env.EXA_API_KEY}` }
-      });
-      const exaData = await exaResponse.json();
-      return exaData.results?.[0]?.snippet || `Exa research placeholder for: ${message}`;
-    } else if (mode === 'Web Search') {
-      // Primary: Serper
-      const serperResponse = await fetch(`https://api.serper.dev/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': process.env.SERPER_API_KEY
-        },
-        body: JSON.stringify({ q: message })
-      });
-      const serperData = await serperResponse.json();
-      return serperData?.organic?.[0]?.snippet || `Serper web search placeholder for: ${message}`;
-    }
-  } catch (err) {
-    console.error('Search failed', err.message);
-    try {
-      // Fallback: Google CSE
-      const googleResponse = await fetch(
-        `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(message)}&cx=${process.env.GOOGLE_CSE_ID}&key=${process.env.GOOGLE_CSE_KEY}`
-      );
-      const googleData = await googleResponse.json();
-      return googleData.items?.[0]?.snippet || `Google CSE fallback placeholder for: ${message}`;
-    } catch (err2) {
-      console.error('Google CSE fallback failed', err2.message);
-      return `Sorry, search failed at the moment.`;
-    }
+/* =====================================================
+   SEARCH / RESEARCH
+===================================================== */
+export async function handleSearch(query, mode) {
+  if (mode === "Research") {
+    const res = await fetch("https://api.exa.com/v1/search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.EXA_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query, numResults: 5 }),
+    });
+
+    const data = await res.json();
+    return data.results.map(r => `• ${r.title}\n${r.snippet}`).join("\n\n");
   }
+
+  // Web Search (Serper)
+  const res = await fetch("https://api.serper.dev/search", {
+    method: "POST",
+    headers: {
+      "X-API-KEY": process.env.SERPER_API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ q: query }),
+  });
+
+  const data = await res.json();
+  return data.organic
+    .slice(0, 5)
+    .map(r => `• ${r.title}\n${r.snippet}`)
+    .join("\n\n");
 }
 
-// --------------------
-// File Analysis
-// --------------------
+/* =====================================================
+   FILE ANALYSIS (Stub for now)
+===================================================== */
 export async function handleFile(file) {
-  // TODO: implement file analysis logic here
-  return `File analysis placeholder`;
-        }
+  return "File analysis coming soon.";
+}
