@@ -20,8 +20,8 @@ async function handleChat(message) {
   } catch (err) {
     console.error('Groq failed, falling back to Hugging Face', err.message);
     try {
-      // Fallback: Hugging Face
-      const hfResponse = await fetch('https://api-inference.huggingface.co/models/<YOUR_MODEL>', {
+      // Fallback: Hugging Face Mistral 7B Instruct
+      const hfResponse = await fetch('https://api-inference.huggingface.co/models/mistral7b-instruct', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.HF_API_KEY}`,
@@ -129,7 +129,7 @@ async function handleSearch(message, mode) {
 // File Analysis
 // --------------------
 async function handleFile(file) {
-  // Placeholder: implement your file analysis logic here
+  // TODO: implement file analysis logic here
   return `File analysis placeholder`;
 }
 
