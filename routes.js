@@ -1,10 +1,10 @@
 // routes.js
-const express = require('express');
-const router = express.Router();
-const multer = require('multer');
-const { ObjectId } = require('mongodb');
-const { handleChat, handleImage, handleSearch, handleFile } = require('./mode');
+import express from 'express';
+import multer from 'multer';
+import { ObjectId } from 'mongodb';
+import { handleChat, handleImage, handleSearch, handleFile } from './mode.js';
 
+const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Middleware to verify Supabase token
@@ -106,4 +106,4 @@ router.get('/sessions', verifySupabaseToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
