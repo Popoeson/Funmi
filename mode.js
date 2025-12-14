@@ -1,32 +1,30 @@
 // mode.js
 import fetch from 'node-fetch';
+import { Groq } from 'groq-sdk';
 
 /* ======================
-   CHAT (Robust: Groq → HF → Dummy)
+   CHAT (Robust: Groq SDK → HF → Dummy)
 ====================== */
 export async function handleChat(message) {
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
   // --------------------
   // Try Groq first
   // --------------------
   try {
-    const groqRes = await fetch(
-      'https://api.groq.com/openai/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama3-8b-8192',
-          messages: [{ role: 'user', content: message }],
-          temperature: 0.7
-        })
-      }
-    );
+    const chatCompletion = await groq.chat.completions.create({
+      model: 'openai/gpt-oss-120b',
+      messages: [
+        { role: 'user', content: message }
+      ],
+      temperature: 0.7,
+      max_completion_tokens: 8192,
+      top_p: 1,
+      stream: false // false because we want the full response at once
+    });
 
-    const groqData = await groqRes.json();
-    const reply = groqData?.choices?.[0]?.message?.content;
+    const reply = chatCompletion.choices?.[0]?.message?.content;
+
     if (reply) return reply;
     throw new Error('Groq empty response');
   } catch (err) {
@@ -34,7 +32,7 @@ export async function handleChat(message) {
   }
 
   // --------------------
-  // Try Hugging Face
+  // Try Hugging Face as fallback
   // --------------------
   try {
     const hfRes = await fetch(
@@ -56,17 +54,16 @@ export async function handleChat(message) {
     );
 
     const hfData = await hfRes.json();
+
     if (Array.isArray(hfData) && hfData[0]?.generated_text) return hfData[0].generated_text;
     if (hfData?.generated_text) return hfData.generated_text;
     if (hfData?.error) console.error('HF error:', hfData.error);
 
-    // HF failed → fallback to dummy
     console.warn('HF failed, returning dummy response');
     return `Hi! You said: "${message}"`;
   } catch (err) {
     console.error('HF completely failed', err.message);
-    // Always return dummy if everything fails
-    return `Hi! You said: "${message}"`;
+    return `Hi! You said: "${message}"`; // Always respond with dummy
   }
 }
 
