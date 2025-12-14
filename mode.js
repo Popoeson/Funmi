@@ -1,141 +1,146 @@
 // mode.js
-import fetch from "node-fetch";
+import fetch from 'node-fetch';
 
-/* =====================================================
-   CHAT (Groq → HF fallback)
-===================================================== */
+// --------------------
+// CHAT MODE
+// --------------------
 export async function handleChat(message) {
+  // 1️⃣ Try Groq first
   try {
-    const res = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "llama3-8b-8192",
-          messages: [{ role: "user", content: message }],
-        }),
-      }
-    );
-
-    const data = await res.json();
-    return data.choices[0].message.content;
-  } catch (err) {
-    console.error("Groq failed → HF fallback", err.message);
-
-    const hfRes = await fetch(
-      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: message }),
-      }
-    );
-
-    const hfData = await hfRes.json();
-    return Array.isArray(hfData)
-      ? hfData[0].generated_text
-      : hfData.generated_text;
-  }
-}
-
-/* =====================================================
-   IMAGE (FLUX → SDXL fallback)
-===================================================== */
-export async function handleImage(prompt) {
-  try {
-    const res = await fetch("https://api.blackforest.ai/v1/generate", {
-      method: "POST",
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.FLUX_API_KEY}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        prompt,
-        width: 1024,
-        height: 1024,
-      }),
+        model: 'llama3-8b-8192',
+        messages: [{ role: 'user', content: message }]
+      })
     });
 
-    const data = await res.json();
+    const groqData = await groqResponse.json();
 
-    // FLUX usually returns base64
-    return {
-      type: "image",
-      content: `data:image/png;base64,${data.images[0].base64}`,
-    };
+    const content =
+      groqData?.choices?.[0]?.message?.content;
+
+    if (content) return content;
+
+    throw new Error('Groq empty response');
   } catch (err) {
-    console.error("Flux failed → SDXL fallback", err.message);
+    console.error('Groq failed → HF fallback', err.message);
+  }
 
-    const res = await fetch(
-      "https://api.stability.ai/v1/generation/sdxl-v1-0/text-to-image",
+  // 2️⃣ Hugging Face fallback (SAFE PARSING)
+  try {
+    const hfResponse = await fetch(
+      'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${process.env.HF_API_KEY}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          text_prompts: [{ text: prompt }],
-          width: 1024,
-          height: 1024,
-          samples: 1,
-        }),
+        body: JSON.stringify({ inputs: message })
       }
     );
 
-    const data = await res.json();
-    return {
-      type: "image",
-      content: `data:image/png;base64,${data.artifacts[0].base64}`,
-    };
+    const hfData = await hfResponse.json();
+
+    // ✅ Handle ALL HF response shapes
+    if (Array.isArray(hfData) && hfData[0]?.generated_text) {
+      return hfData[0].generated_text;
+    }
+
+    if (hfData?.generated_text) {
+      return hfData.generated_text;
+    }
+
+    if (hfData?.error) {
+      console.error('HF error:', hfData.error);
+    }
+
+    return "I'm having trouble responding right now. Please try again.";
+  } catch (err) {
+    console.error('Hugging Face failed', err.message);
+    return "I'm currently unavailable. Please try again later.";
   }
 }
 
-/* =====================================================
-   SEARCH / RESEARCH
-===================================================== */
-export async function handleSearch(query, mode) {
-  if (mode === "Research") {
-    const res = await fetch("https://api.exa.com/v1/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.EXA_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query, numResults: 5 }),
-    });
+// --------------------
+// IMAGE GENERATION
+// --------------------
+export async function handleImage(message) {
+  // ⚠️ Black Forest removed – skip directly to SDXL
+  try {
+    const sdxlResponse = await fetch(
+      'https://api.stability.ai/v1/generation/sdxl-1-0/text-to-image',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.STABILITY_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text_prompts: [{ text: message }],
+          width: 1024,
+          height: 1024,
+          samples: 1
+        })
+      }
+    );
 
-    const data = await res.json();
-    return data.results.map(r => `• ${r.title}\n${r.snippet}`).join("\n\n");
+    const sdxlData = await sdxlResponse.json();
+
+    const base64 = sdxlData?.artifacts?.[0]?.base64;
+
+    if (!base64) throw new Error('No image generated');
+
+    // Return as image URL (frontend-ready)
+    return `data:image/png;base64,${base64}`;
+  } catch (err) {
+    console.error('SDXL failed', err.message);
+    return 'Image generation failed. Please try again.';
   }
-
-  // Web Search (Serper)
-  const res = await fetch("https://api.serper.dev/search", {
-    method: "POST",
-    headers: {
-      "X-API-KEY": process.env.SERPER_API_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ q: query }),
-  });
-
-  const data = await res.json();
-  return data.organic
-    .slice(0, 5)
-    .map(r => `• ${r.title}\n${r.snippet}`)
-    .join("\n\n");
 }
 
-/* =====================================================
-   FILE ANALYSIS (Stub for now)
-===================================================== */
-export async function handleFile(file) {
-  return "File analysis coming soon.";
+// --------------------
+// SEARCH / RESEARCH
+// --------------------
+export async function handleSearch(message, mode) {
+  try {
+    if (mode === 'Research') {
+      const exaResponse = await fetch(
+        `https://api.exa.com/v1/search?q=${encodeURIComponent(message)}`,
+        { headers: { Authorization: `Bearer ${process.env.EXA_API_KEY}` } }
+      );
+
+      const exaData = await exaResponse.json();
+      return exaData?.results?.[0]?.snippet || 'No research result found.';
+    }
+
+    if (mode === 'Web Search') {
+      const serperResponse = await fetch('https://api.serper.dev/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': process.env.SERPER_API_KEY
+        },
+        body: JSON.stringify({ q: message })
+      });
+
+      const serperData = await serperResponse.json();
+      return serperData?.organic?.[0]?.snippet || 'No web result found.';
+    }
+  } catch (err) {
+    console.error('Search failed', err.message);
+    return 'Search is temporarily unavailable.';
+  }
+}
+
+// --------------------
+// FILE ANALYSIS
+// --------------------
+export async function handleFile() {
+  return 'File analysis coming soon.';
 }
