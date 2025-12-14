@@ -288,7 +288,7 @@
   let currentMode = 'Default';
   let currentSessionId = null;
 
-  // Sidebar toggle
+  // Sidebar & UI
   menuBtn.onclick = () => sidebar.classList.toggle('open');
   themeBtn.onclick = () => document.body.classList.toggle('dark');
   modeBtn.onclick = () =>
@@ -300,21 +300,6 @@
       currentMode = item.dataset.mode;
       modeIndicator.textContent = 'Mode: ' + currentMode;
       modeMenu.style.display = 'none';
-
-      if (!currentSessionId) {
-        try {
-          const res = await fetch(`${API_URL}/session`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionName: currentMode })
-          });
-
-          const data = await res.json();
-          currentSessionId = data._id;
-        } catch (err) {
-          console.error('Session error:', err);
-        }
-      }
     };
   });
 
@@ -324,6 +309,36 @@
     input.style.height = input.scrollHeight + 'px';
   });
 
+  // Helper: add user message
+  function addUserMessage(text) {
+    const msg = document.createElement('div');
+    msg.className = 'message user';
+    msg.textContent = text;
+    chatArea.appendChild(msg);
+  }
+
+  // Helper: add AI text message
+  function addAIText(text) {
+    const msg = document.createElement('div');
+    msg.className = 'message ai';
+    msg.textContent = text;
+    chatArea.appendChild(msg);
+  }
+
+  // Helper: add AI image
+  function addAIImage(url) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'message ai';
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '12px';
+
+    wrapper.appendChild(img);
+    chatArea.appendChild(wrapper);
+  }
+
   // Send message
   async function sendMessage() {
     const text = input.value.trim();
@@ -332,14 +347,11 @@
     welcome.style.display = 'none';
     chatArea.style.display = 'block';
 
-    const userMsg = document.createElement('div');
-    userMsg.className = 'message user';
-    userMsg.textContent = text;
-    chatArea.appendChild(userMsg);
-    chatArea.scrollTop = chatArea.scrollHeight;
+    addUserMessage(text);
 
     input.value = '';
     input.style.height = 'auto';
+    chatArea.scrollTop = chatArea.scrollHeight;
 
     try {
       const res = await fetch(`${API_URL}/message`, {
@@ -354,18 +366,22 @@
 
       const data = await res.json();
 
-      const aiMsg = document.createElement('div');
-      aiMsg.className = 'message ai';
-      aiMsg.textContent =
-        data.aiMessage?.content || 'Funmi did not respond.';
-      chatArea.appendChild(aiMsg);
+      // 🔥 MODE-AWARE RENDERING
+      const aiContent = data.aiMessage?.content || '';
+
+      if (
+        currentMode === 'Generate Image' &&
+        (aiContent.startsWith('http') || aiContent.includes('image'))
+      ) {
+        addAIImage(aiContent);
+      } else {
+        addAIText(aiContent || 'Funmi did not respond.');
+      }
+
       chatArea.scrollTop = chatArea.scrollHeight;
     } catch (err) {
       console.error('Send message failed:', err);
-      const errorMsg = document.createElement('div');
-      errorMsg.className = 'message ai';
-      errorMsg.textContent = 'Error sending message.';
-      chatArea.appendChild(errorMsg);
+      addAIText('Error sending message.');
     }
   }
 
@@ -378,14 +394,14 @@
     }
   });
 
-  // Close sidebar when clicking outside
+  // Close sidebar on outside click
   document.addEventListener('click', e => {
     if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
       sidebar.classList.remove('open');
     }
   });
 
-  // Initialize default session
+  // Init session
   async function initDefaultSession() {
     try {
       const res = await fetch(`${API_URL}/session`, {
@@ -393,7 +409,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionName: currentMode })
       });
-
       const data = await res.json();
       currentSessionId = data._id;
     } catch (err) {
