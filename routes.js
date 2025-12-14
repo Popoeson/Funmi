@@ -40,7 +40,6 @@ router.post('/session', devUser, async (req, res) => {
         createdAt: new Date(),
         updatedAt: new Date()
       });
-
       session = await sessions.findOne({ _id: insert.insertedId });
     }
 
@@ -53,7 +52,7 @@ router.post('/session', devUser, async (req, res) => {
 /**
  * Send message
  */
-router.post('/message', devUser, async (req, res) => {
+router.post('/message', devUser, upload.single('file'), async (req, res) => {
   try {
     const { sessionId, message, mode } = req.body;
     const sessions = req.app.locals.db.collection('sessions');
@@ -63,9 +62,7 @@ router.post('/message', devUser, async (req, res) => {
       userId: req.user.id
     });
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
+    if (!session) return res.status(404).json({ error: 'Session not found' });
 
     const userMessage = {
       role: 'user',
@@ -73,6 +70,7 @@ router.post('/message', devUser, async (req, res) => {
       timestamp: new Date()
     };
 
+    // Store user message
     await sessions.updateOne(
       { _id: session._id },
       { $push: { messages: userMessage }, $set: { updatedAt: new Date() } }
@@ -80,6 +78,7 @@ router.post('/message', devUser, async (req, res) => {
 
     let funmiResponse;
 
+    // Call the correct handler based on mode
     switch (mode) {
       case 'Generate Image':
         funmiResponse = await handleImage(message);
@@ -95,7 +94,7 @@ router.post('/message', devUser, async (req, res) => {
         break;
 
       default:
-        funmiResponse = await handleChat(message);
+        funmiResponse = await handleChat(message); // Groq → HF → Dummy
     }
 
     const aiMessage = {
@@ -104,6 +103,7 @@ router.post('/message', devUser, async (req, res) => {
       timestamp: new Date()
     };
 
+    // Store AI response
     await sessions.updateOne(
       { _id: session._id },
       { $push: { messages: aiMessage }, $set: { updatedAt: new Date() } }
@@ -111,6 +111,7 @@ router.post('/message', devUser, async (req, res) => {
 
     res.json({ userMessage, aiMessage });
   } catch (err) {
+    console.error('Error in /message route:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -120,9 +121,7 @@ router.post('/message', devUser, async (req, res) => {
  */
 router.post('/upload', devUser, upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     const stream = req.app.locals.cloudinary.uploader.upload_stream(
       { resource_type: 'auto' },
