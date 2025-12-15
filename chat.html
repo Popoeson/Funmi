@@ -415,7 +415,20 @@ function addAIText(text) {
 
   const content = document.createElement('div');
   content.className = 'ai-content';
+
+  // 1️⃣ Render markdown first
   content.innerHTML = renderMarkdown(text);
+
+  // 2️⃣ THEN render KaTeX math (NEW)
+  if (window.renderMathInElement) {
+    renderMathInElement(content, {
+      delimiters: [
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true }
+      ],
+      throwOnError: false
+    });
+  }
 
   // Footer with icons
   const footer = document.createElement('div');
