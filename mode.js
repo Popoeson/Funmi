@@ -76,32 +76,84 @@ export async function handleChat(message) {
 
 /* ======================
    IMAGE GENERATION
+   FLUX (Primary) → SDXL (Fallback)
 ====================== */
 export async function handleImage(prompt) {
+
+  /* ======================
+     1️⃣ FLUX (Primary)
+  ====================== */
   try {
-    const res = await fetch(
-      'https://api.stability.ai/v1/generation/sdxl-1-0/text-to-image',
+    const fluxRes = await fetch(
+      'https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell',
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.STABILITY_API_KEY}`,
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          text_prompts: [{ text: prompt }],
-          width: 1024,
-          height: 1024,
-          samples: 1
+          inputs: prompt,
+          parameters: {
+            num_inference_steps: 4,
+            guidance_scale: 3.5
+          }
         })
       }
     );
 
+    if (!fluxRes.ok) {
+      const err = await fluxRes.text();
+      console.error('FLUX API error:', err);
+      throw new Error('FLUX request failed');
+    }
+
+    const buffer = Buffer.from(await fluxRes.arrayBuffer());
+    const base64 = buffer.toString('base64');
+
+    if (base64) {
+      console.log('FLUX image generated');
+      return `data:image/png;base64,${base64}`;
+    }
+
+    throw new Error('FLUX returned empty image');
+  } catch (err) {
+    console.error('FLUX failed → SDXL fallback', err.message);
+  }
+
+  /* ======================
+     2️⃣ STABILITY SDXL (Fallback)
+  ====================== */
+  try {
+    const res = await fetch(
+      'https://api.stability.ai/v2beta/stable-image/generate/sdxl',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
+          Accept: 'application/json'
+        },
+        body: new URLSearchParams({
+          prompt,
+          output_format: 'png'
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Stability API error:', err);
+      throw new Error('Stability request failed');
+    }
+
     const data = await res.json();
-    const base64 = data?.artifacts?.[0]?.base64;
 
-    if (!base64) throw new Error('No image generated');
+    if (!data?.image) {
+      throw new Error('SDXL returned no image');
+    }
 
-    return `data:image/png;base64,${base64}`;
+    console.log('SDXL image generated');
+    return `data:image/png;base64,${data.image}`;
   } catch (err) {
     console.error('SDXL failed', err.message);
     return 'Image generation failed. Please try again later.';
