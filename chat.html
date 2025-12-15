@@ -272,6 +272,7 @@
   <div data-mode="Web Search">Web Search</div>
 </div>
 
+
 <script>
 const sidebar = document.getElementById('sidebar');
 const menuBtn = document.getElementById('menuBtn');
@@ -290,31 +291,43 @@ let currentSessionId = null;
 let loadingMsg = null;
 
 /* ======================
-   UI CONTROLS
+   BASIC MARKDOWN PARSER
 ====================== */
-menuBtn.onclick = () => sidebar.classList.toggle('open');
-themeBtn.onclick = () => document.body.classList.toggle('dark');
-modeBtn.onclick = () =>
-  modeMenu.style.display = modeMenu.style.display === 'block' ? 'none' : 'block';
-
-modeMenu.querySelectorAll('div').forEach(item => {
-  item.onclick = () => {
-    currentMode = item.dataset.mode;
-    modeIndicator.textContent = 'Mode: ' + currentMode;
-    modeMenu.style.display = 'none';
-  };
-});
+function renderMarkdown(text) {
+  return text
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^- (.*$)/gim, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>')
+    .replace(/\n/g, '<br>');
+}
 
 /* ======================
-   INPUT AUTO-RESIZE
+   IMAGE MODAL
 ====================== */
-input.addEventListener('input', () => {
-  input.style.height = 'auto';
-  input.style.height = input.scrollHeight + 'px';
-});
+const modal = document.createElement('div');
+modal.style.cssText = `
+  position:fixed; inset:0; background:rgba(0,0,0,.85);
+  display:none; align-items:center; justify-content:center; z-index:9999;
+`;
+modal.innerHTML = `
+  <div style="position:relative; max-width:90%;">
+    <img id="modalImg" style="max-width:100%; border-radius:12px;" />
+    <a id="modalDownload" download style="position:absolute; top:10px; right:50px; color:white; font-size:20px; cursor:pointer;">⬇</a>
+    <span id="modalClose" style="position:absolute; top:10px; right:10px; color:white; font-size:24px; cursor:pointer;">✖</span>
+  </div>
+`;
+document.body.appendChild(modal);
+
+modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+modal.querySelector('#modalClose').onclick = () => modal.style.display = 'none';
 
 /* ======================
-   MESSAGE HELPERS
+   HELPERS
 ====================== */
 function scrollDown() {
   chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
@@ -328,11 +341,10 @@ function addUserMessage(text) {
   scrollDown();
 }
 
-function addAIText(text, isDummy = false) {
+function addAIText(text) {
   const msg = document.createElement('div');
   msg.className = 'message ai';
-  msg.textContent = text;
-  if (isDummy) msg.style.opacity = 0.7;
+  msg.innerHTML = renderMarkdown(text);
   chatArea.appendChild(msg);
   scrollDown();
 }
@@ -345,26 +357,19 @@ function addAIImage(src) {
   img.src = src;
   img.style.maxWidth = '100%';
   img.style.borderRadius = '14px';
-  img.style.marginTop = '6px';
+  img.style.cursor = 'pointer';
 
-  // Image load failure fallback
-  img.onerror = () => {
-    img.replaceWith(
-      document.createTextNode('⚠ Image failed to load. Please try again.')
-    );
+  img.onclick = () => {
+    modal.style.display = 'flex';
+    modal.querySelector('#modalImg').src = src;
+    modal.querySelector('#modalDownload').href = src;
   };
 
-  // Download button
-  const download = document.createElement('a');
-  download.href = src;
-  download.download = 'funmi-image.png';
-  download.textContent = '⬇ Download image';
-  download.style.display = 'inline-block';
-  download.style.marginTop = '8px';
-  download.style.fontSize = '13px';
+  img.onerror = () => {
+    img.replaceWith(document.createTextNode('⚠ Image failed to load'));
+  };
 
   wrapper.appendChild(img);
-  wrapper.appendChild(download);
   chatArea.appendChild(wrapper);
   scrollDown();
 }
@@ -372,7 +377,7 @@ function addAIImage(src) {
 function addLoading() {
   loadingMsg = document.createElement('div');
   loadingMsg.className = 'message ai loading';
-  loadingMsg.textContent = 'Funmi is generating...';
+  loadingMsg.textContent = 'Funmi is thinking...';
   chatArea.appendChild(loadingMsg);
   scrollDown();
 }
@@ -396,58 +401,36 @@ async function sendMessage() {
 
   addUserMessage(text);
   input.value = '';
-  input.style.height = 'auto';
   addLoading();
 
   try {
-    // Create session if needed
     if (!currentSessionId) {
       const s = await fetch(`${API_URL}/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionName: currentMode })
       });
-      const sd = await s.json();
-      currentSessionId = sd._id;
+      currentSessionId = (await s.json())._id;
     }
 
-    // Send message
     const res = await fetch(`${API_URL}/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: currentSessionId,
-        message: text,
-        mode: currentMode
-      })
+      body: JSON.stringify({ sessionId: currentSessionId, message: text, mode: currentMode })
     });
 
-    const data = await res.json();
+    const aiContent = (await res.json()).aiMessage?.content || '';
     removeLoading();
 
-    const aiContent = data.aiMessage?.content || '';
-
-    /* ======================
-       IMAGE DETECTION (MODE-INDEPENDENT)
-    ====================== */
-    const isBase64Image = aiContent.startsWith('data:image/');
-    const isImageURL = /^https?:\/\/.+\.(png|jpg|jpeg|webp)$/i.test(aiContent);
-
-    if (isBase64Image || isImageURL) {
+    if (aiContent.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|webp)$/i.test(aiContent)) {
       addAIImage(aiContent);
-      return;
+    } else {
+      addAIText(aiContent);
     }
 
-    const isDummy =
-      aiContent.includes('Hi! You said') ||
-      aiContent.includes('temporarily unavailable');
-
-    addAIText(aiContent || 'Funmi did not respond.', isDummy);
-
-  } catch (err) {
+  } catch {
     removeLoading();
-    console.error(err);
-    addAIText('Something went wrong. Please try again.', true);
+    addAIText('Something went wrong.');
   }
 }
 
@@ -455,36 +438,12 @@ async function sendMessage() {
    EVENTS
 ====================== */
 sendBtn.onclick = sendMessage;
-
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
   }
 });
-
-document.addEventListener('click', e => {
-  if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
-    sidebar.classList.remove('open');
-  }
-});
-
-/* ======================
-   INIT SESSION
-====================== */
-(async function init() {
-  try {
-    const r = await fetch(`${API_URL}/session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionName: currentMode })
-    });
-    const d = await r.json();
-    currentSessionId = d._id;
-  } catch (e) {
-    console.error('Session init failed');
-  }
-})();
 </script>
 </body>
 </html>
