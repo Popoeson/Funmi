@@ -348,13 +348,63 @@ function scrollDown() { chatArea.scrollTo({ top: chatArea.scrollHeight, behavior
 function addUserMessage(text) { const msg=document.createElement('div'); msg.className='message user'; msg.textContent=text; chatArea.appendChild(msg); scrollDown(); }
 
 /* UPDATED: AI Section */
-function addAIText(text) {
+/* function addAIText(text) {
   const section = document.createElement('div');
   section.className = 'ai-section';
   const content = document.createElement('div');
   content.className = 'ai-content';
   content.innerHTML = renderMarkdown(text);
   section.appendChild(content);
+  chatArea.appendChild(section);
+  scrollDown();
+}*/
+
+function addAIText(text) {
+  const section = document.createElement('div');
+  section.className = 'ai-section';
+
+  const content = document.createElement('div');
+  content.className = 'ai-content';
+  content.innerHTML = renderMarkdown(text);
+
+  // Footer with icons
+  const footer = document.createElement('div');
+  footer.className = 'ai-footer';
+
+  // Copy icon
+  const copyIcon = document.createElement('i');
+  copyIcon.className = 'fas fa-copy';
+  copyIcon.title = 'Copy';
+  copyIcon.onclick = () => {
+    navigator.clipboard.writeText(text);
+    copyIcon.style.color = '#4caf50';
+    setTimeout(() => copyIcon.style.color = '#888', 800);
+  };
+
+  // Thumbs up
+  const thumbsUp = document.createElement('i');
+  thumbsUp.className = 'fas fa-thumbs-up';
+  thumbsUp.title = 'Helpful';
+  thumbsUp.onclick = () => { 
+    thumbsUp.style.color = '#4caf50'; 
+    thumbsDown.style.color = '#888'; 
+  };
+
+  // Thumbs down
+  const thumbsDown = document.createElement('i');
+  thumbsDown.className = 'fas fa-thumbs-down';
+  thumbsDown.title = 'Not helpful';
+  thumbsDown.onclick = () => { 
+    thumbsDown.style.color = '#f44336'; 
+    thumbsUp.style.color = '#888'; 
+  };
+
+  footer.appendChild(copyIcon);
+  footer.appendChild(thumbsUp);
+  footer.appendChild(thumbsDown);
+
+  section.appendChild(content);
+  section.appendChild(footer);
   chatArea.appendChild(section);
   scrollDown();
 }
