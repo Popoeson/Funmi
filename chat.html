@@ -135,7 +135,7 @@ body.dark .ai-section { border-bottom: 1px solid rgba(255,255,255,0.15); }
 }
 .logo img { width:80px; margin-bottom:10px; }
 
-/* Input Bar */
+/* Input Bar 
 .input-bar {
   position: absolute;
   bottom:0; left:0; right:0;
@@ -159,6 +159,47 @@ body.dark .input-wrapper { background: var(--glass-dark); border:1px solid var(-
 textarea {
   flex:1; width:100%; resize:none; border:none; outline:none;
   background:transparent; font-size:15px; min-height:40px; max-height:220px; color:inherit;
+} */
+
+/* Input Bar */
+.input-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 20px 15px;
+  display: flex; 
+  align-items: flex-end; 
+  gap: 10px;
+  background: transparent; /* removed backdrop */
+  backdrop-filter: none;   /* removed blur */
+}
+
+/* Input Wrapper */
+.input-wrapper {
+  flex: 1; 
+  display: flex; 
+  align-items: center; 
+  gap: 10px;
+  background: transparent; /* removed glass background */
+  backdrop-filter: none;   /* removed blur */
+  border: none;            /* no border */
+  box-shadow: none;        /* removed shadow */
+  border-radius: 0;        /* optional: remove rounded edges */
+  padding: 0;              /* optional: remove inner padding */
+}
+
+/* Optional: keep some padding inside textarea */
+textarea {
+  flex: 1; 
+  width: 100%; 
+  resize: none; 
+  border: none; 
+  outline: none;
+  background: transparent; 
+  font-size: 15px; 
+  min-height: 40px; 
+  max-height: 220px; 
+  color: inherit;
+  padding: 0; /* remove padding if you want it very clean */
 }
 
 .send-btn {
