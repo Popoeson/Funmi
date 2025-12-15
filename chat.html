@@ -73,44 +73,58 @@ body.dark .icon-btn { background: var(--glass-dark); border:1px solid var(--glas
   overflow-y: auto;
 }
 
-/* Messages */
-.message {
-  max-width: 100%;
-  margin-bottom: 12px;
-  padding: 12px 16px;
-  border-radius: 16px;
+/* User Messages */
+.message.user {
+  max-width: 60%;
+  margin-left:auto;
+  margin-bottom:12px;
+  padding:12px 16px;
+  border-radius:16px;
   background: var(--glass-light);
   backdrop-filter: var(--blur);
   border: 1px solid var(--glass-border-light);
   box-shadow: var(--shadow-light);
   overflow-wrap: break-word;
 }
-body.dark .message { background: var(--glass-dark); border:1px solid var(--glass-border-dark); box-shadow: var(--shadow-dark); }
-.message.user { margin-left:auto; }
+body.dark .message.user { background: var(--glass-dark); border:1px solid var(--glass-border-dark); box-shadow: var(--shadow-dark); }
 
-/* Tables inside AI messages */
-.message.ai table {
+/* AI Messages Sections */
+.ai-section {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+body.dark .ai-section { border-bottom: 1px solid rgba(255,255,255,0.15); }
+
+.ai-content {
+  padding: 0 10px;
+}
+.ai-content img {
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 10px 0;
+  cursor: pointer;
+}
+.ai-content table {
   width: 100%;
   border-collapse: collapse;
   margin: 8px 0;
   display: block;
   overflow-x: auto;
-  max-width: 100%;
 }
-.message.ai th, .message.ai td {
+.ai-content th, .ai-content td {
   border: 1px solid #444;
   padding: 6px;
   text-align: left;
   white-space: nowrap;
 }
-.message.ai th {
+.ai-content th {
   background: #222;
   color: #fff;
   font-weight:500;
   text-align:left;
 }
-.message.ai table::-webkit-scrollbar { height:6px; }
-.message.ai table::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius:3px; }
 
 /* Center Welcome */
 .center {
@@ -282,80 +296,29 @@ input.addEventListener('input', () => {
 
 /* Markdown Renderer */
 function renderMarkdown(text) {
-
-  /* =========================
-     1. CODE BLOCKS
-  ========================== */
   text = text.replace(/```([\s\S]*?)```/g, (m, code) => {
     return `<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
   });
-
-  /* =========================
-     2. TABLES (VERY IMPORTANT: FIRST)
-  ========================== */
   const tableRegex = /\|(.+)\|\n\|([-\s|:]+)\|\n((\|.*\|\n?)*)/g;
-
   text = text.replace(tableRegex, (match) => {
     const lines = match.trim().split('\n');
-
-    const headers = lines[0]
-      .split('|')
-      .slice(1, -1)
-      .map(h => h.trim());
-
-    const rows = lines.slice(2).map(line =>
-      line
-        .split('|')
-        .slice(1, -1)
-        .map(cell =>
-          cell
-            .trim()
-            // convert bullet dots to line breaks
-            .replace(/•\s*/g, '• ')
-            .replace(/\n+/g, '<br>')
-        )
-    );
-
-    let html = '<div class="table-wrapper"><table>';
-    html += '<thead><tr>' +
+    const headers = lines[0].split('|').slice(1, -1).map(h => h.trim());
+    const rows = lines.slice(2).map(line => line.split('|').slice(1,-1).map(cell => cell.trim().replace(/•\s*/g, '• ').replace(/\n+/g,'<br>')));
+    let html = '<div class="table-wrapper"><table><thead><tr>' +
       headers.map(h => `<th>${h}</th>`).join('') +
-      '</tr></thead>';
-
-    html += '<tbody>';
-    rows.forEach(row => {
-      html += '<tr>' +
-        row.map(cell => `<td>${cell}</td>`).join('') +
-        '</tr>';
-    });
+      '</tr></thead><tbody>';
+    rows.forEach(row => { html += '<tr>' + row.map(cell => `<td>${cell}</td>`).join('') + '</tr>'; });
     html += '</tbody></table></div>';
-
     return html;
   });
-
-  /* =========================
-     3. HEADINGS
-  ========================== */
   text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>')
              .replace(/^## (.*$)/gim, '<h2>$1</h2>')
              .replace(/^# (.*$)/gim, '<h1>$1</h1>');
-
-  /* =========================
-     4. BOLD & ITALICS
-  ========================== */
   text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
              .replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-  /* =========================
-     5. UNORDERED LISTS
-  ========================== */
   text = text.replace(/^- (.*$)/gim, '<li>$1</li>');
   text = text.replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>');
-
-  /* =========================
-     6. SAFE LINE BREAKS (OUTSIDE TABLES)
-  ========================== */
   text = text.replace(/\n(?!<\/?(table|thead|tbody|tr|td|th))/g, '<br>');
-
   return text;
 }
 
@@ -366,9 +329,45 @@ modal.onclick = e => { if(e.target === modal) modal.style.display='none'; };
 /* Helpers */
 function scrollDown() { chatArea.scrollTo({ top: chatArea.scrollHeight, behavior:'smooth' }); }
 function addUserMessage(text) { const msg=document.createElement('div'); msg.className='message user'; msg.textContent=text; chatArea.appendChild(msg); scrollDown(); }
-function addAIText(text) { const msg=document.createElement('div'); msg.className='message ai'; msg.innerHTML = renderMarkdown(text); chatArea.appendChild(msg); scrollDown(); }
-function addAIImage(src){ const wrapper=document.createElement('div'); wrapper.className='message ai'; const img=document.createElement('img'); img.src=src; img.style.maxWidth='100%'; img.style.borderRadius='14px'; img.style.cursor='pointer'; img.onclick=()=>{ modal.style.display='flex'; modalImg.src=src; modalDownload.href=src; }; img.onerror=()=>{ img.replaceWith(document.createTextNode('⚠ Image failed to load')); }; wrapper.appendChild(img); chatArea.appendChild(wrapper); scrollDown(); }
-function addLoading(){ loadingMsg = document.createElement('div'); loadingMsg.className='message ai loading'; loadingMsg.textContent='Funmi is generating...'; chatArea.appendChild(loadingMsg); scrollDown(); }
+
+/* UPDATED: AI Section */
+function addAIText(text) {
+  const section = document.createElement('div');
+  section.className = 'ai-section';
+  const content = document.createElement('div');
+  content.className = 'ai-content';
+  content.innerHTML = renderMarkdown(text);
+  section.appendChild(content);
+  chatArea.appendChild(section);
+  scrollDown();
+}
+
+function addAIImage(src){
+  const section = document.createElement('div');
+  section.className = 'ai-section';
+  const content = document.createElement('div');
+  content.className = 'ai-content';
+  const img = document.createElement('img');
+  img.src = src;
+  img.onclick = () => { modal.style.display='flex'; modalImg.src=src; modalDownload.href=src; };
+  img.onerror = () => { img.replaceWith(document.createTextNode('⚠ Image failed to load')); };
+  content.appendChild(img);
+  section.appendChild(content);
+  chatArea.appendChild(section);
+  scrollDown();
+}
+
+function addLoading(){
+  loadingMsg = document.createElement('div');
+  loadingMsg.className='ai-section';
+  const content = document.createElement('div');
+  content.className='ai-content';
+  content.textContent='Funmi is generating...';
+  loadingMsg.appendChild(content);
+  chatArea.appendChild(loadingMsg);
+  scrollDown();
+}
+
 function removeLoading(){ if(loadingMsg){ chatArea.removeChild(loadingMsg); loadingMsg=null; } }
 
 /* Send Message */
@@ -388,22 +387,44 @@ async function sendMessage() {
     removeLoading();
 
     const isImage = aiContent.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|webp)$/i.test(aiContent);
-    if(currentMode==='Generate Image' && isImage){ addAIImage(aiContent); } else { addAIText(aiContent); }
+    if(currentMode === 'Generate Image' && isImage){
+      addAIImage(aiContent);
+    } else {
+      addAIText(aiContent);
+    }
 
-  }catch(err){ removeLoading(); console.error(err); addAIText('Something went wrong.', true); }
+  } catch(err) {
+    removeLoading();
+    console.error(err);
+    addAIText('⚠ Something went wrong while generating the response.');
+  }
 }
 
-/* Events */
+/* Event Listeners */
 sendBtn.onclick = sendMessage;
-input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
-document.addEventListener('click', e => { if(!sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('open'); });
+input.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendMessage();
+  }
+});
 
-/* Init Session */
+document.addEventListener('click', e => {
+  if(!sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('open');
+});
+
+/* Initialize Session */
 (async function init(){
   try{
-    const r = await fetch(`${API_URL}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sessionName:currentMode}) });
+    const r = await fetch(`${API_URL}/session`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionName: currentMode })
+    });
     currentSessionId = (await r.json())._id;
-  }catch(e){ console.error('Session init failed'); }
+  } catch(e) {
+    console.error('Session initialization failed', e);
+  }
 })();
 </script>
 </body>
