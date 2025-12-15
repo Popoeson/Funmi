@@ -316,6 +316,10 @@ input.addEventListener('input', () => {
 /* ======================
    MESSAGE HELPERS
 ====================== */
+function scrollDown() {
+  chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
+}
+
 function addUserMessage(text) {
   const msg = document.createElement('div');
   msg.className = 'message user';
@@ -343,7 +347,24 @@ function addAIImage(src) {
   img.style.borderRadius = '14px';
   img.style.marginTop = '6px';
 
+  // Image load failure fallback
+  img.onerror = () => {
+    img.replaceWith(
+      document.createTextNode('⚠ Image failed to load. Please try again.')
+    );
+  };
+
+  // Download button
+  const download = document.createElement('a');
+  download.href = src;
+  download.download = 'funmi-image.png';
+  download.textContent = '⬇ Download image';
+  download.style.display = 'inline-block';
+  download.style.marginTop = '8px';
+  download.style.fontSize = '13px';
+
   wrapper.appendChild(img);
+  wrapper.appendChild(download);
   chatArea.appendChild(wrapper);
   scrollDown();
 }
@@ -363,10 +384,6 @@ function removeLoading() {
   }
 }
 
-function scrollDown() {
-  chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
-}
-
 /* ======================
    SEND MESSAGE
 ====================== */
@@ -383,6 +400,7 @@ async function sendMessage() {
   addLoading();
 
   try {
+    // Create session if needed
     if (!currentSessionId) {
       const s = await fetch(`${API_URL}/session`, {
         method: 'POST',
@@ -393,6 +411,7 @@ async function sendMessage() {
       currentSessionId = sd._id;
     }
 
+    // Send message
     const res = await fetch(`${API_URL}/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -409,12 +428,12 @@ async function sendMessage() {
     const aiContent = data.aiMessage?.content || '';
 
     /* ======================
-       IMAGE DETECTION
+       IMAGE DETECTION (MODE-INDEPENDENT)
     ====================== */
     const isBase64Image = aiContent.startsWith('data:image/');
     const isImageURL = /^https?:\/\/.+\.(png|jpg|jpeg|webp)$/i.test(aiContent);
 
-    if (currentMode === 'Generate Image' && (isBase64Image || isImageURL)) {
+    if (isBase64Image || isImageURL) {
       addAIImage(aiContent);
       return;
     }
@@ -428,7 +447,7 @@ async function sendMessage() {
   } catch (err) {
     removeLoading();
     console.error(err);
-    addAIText('Something went wrong.', true);
+    addAIText('Something went wrong. Please try again.', true);
   }
 }
 
