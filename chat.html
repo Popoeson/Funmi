@@ -146,66 +146,8 @@ body.dark .ai-section { border-bottom: 1px solid rgba(255,255,255,0.15); }
 }
 
 .ai-footer i:hover {
-  color: #4caf50; /* green on hover, adjust as needed */
+  color: #4caf50; /* green on hover, adjust as needed 
 }
-
-/* ================================
-   PREVENT HORIZONTAL OVERFLOW
-   (Except tables)
-================================ 
-
-/* Lock horizontal scrolling globally */
-.chat-area {
-  overflow-x: hidden;
-}
-
-/* Force text wrapping in AI content */
-.ai-content {
-  max-width: 100%;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
-}
-
-/* KaTeX FIX — allow math to wrap */
-.ai-content .katex {
-  white-space: normal !important;
-}
-
-.ai-content .katex-display {
-  overflow-x: auto;
-  overflow-y: hidden;
-  max-width: 100%;
-}
-
-/* Inline math wrapping */
-.ai-content .katex span {
-  white-space: normal !important;
-}
-
-/* Prevent inline elements from forcing overflow */
-.ai-content p,
-.ai-content span,
-.ai-content div {
-  max-width: 100%;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-/* Code blocks should wrap, not overflow */
-.ai-content pre,
-.ai-content code {
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-width: 100%;
-}
-
-/* Tables remain scrollable (unchanged behavior) */
-.ai-content table {
-  display: block;
-  overflow-x: auto;
-  max-width: 100%;
-}*/
 
 /* Center Welcome */
 .center {
