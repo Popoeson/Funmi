@@ -3,22 +3,52 @@ import fetch from 'node-fetch';
 import { Groq } from 'groq-sdk';
 
 /* ======================
-   CHAT (Robust: Groq SDK → HF → Dummy)
+   GLOBAL SYSTEM PROMPT
+====================== */
+const SYSTEM_PROMPT = `
+You are Funmi, a friendly and intelligent AI assistant created by the developer.
+
+Identity rules:
+- Your name is Funmi
+- Always refer to yourself as Funmi
+- Never say you are ChatGPT
+- Never say you were created by OpenAI
+- If asked who you are, clearly state that you are Funmi, an AI assistant
+
+Behavior rules:
+- Be polite, helpful, and professional
+- Use clear formatting for long answers (headings, lists, tables)
+- If you ever accidentally mention ChatGPT or OpenAI, immediately correct yourself and restate that you are Funmi
+
+Capabilities:
+- You can answer questions
+- You can explain concepts
+- You can analyze text and files
+- You can generate images when asked
+`;
+
+/* ======================
+   CHAT (Groq → HF → Dummy)
 ====================== */
 export async function handleChat(message) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-  // --------------------
-  // Try Groq first
-  // --------------------
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: message }
+  ];
+
+  /* --------------------
+     1️⃣ Groq (Primary)
+  -------------------- */
   try {
     const chatCompletion = await groq.chat.completions.create({
       model: 'openai/gpt-oss-120b',
-      messages: [{ role: 'user', content: message }],
+      messages,
       temperature: 0.7,
       max_completion_tokens: 8192,
       top_p: 1,
-      stream: false // full response at once
+      stream: false
     });
 
     const reply = chatCompletion.choices?.[0]?.message?.content;
@@ -29,21 +59,28 @@ export async function handleChat(message) {
     console.error('Groq failed → HF fallback', err.message);
   }
 
-  // --------------------
-  // Try Hugging Face as fallback
-  // --------------------
+  /* --------------------
+     2️⃣ Hugging Face (Fallback)
+  -------------------- */
   try {
+    const hfPrompt = `
+${SYSTEM_PROMPT}
+
+User: ${message}
+Funmi:
+`;
+
     const hfRes = await fetch(
       'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2',
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.HF_API_KEY}`,
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          inputs: message,
-          options: { wait_for_model: true } // ensures the model is loaded
+          inputs: hfPrompt,
+          options: { wait_for_model: true }
         })
       }
     );
@@ -54,35 +91,26 @@ export async function handleChat(message) {
       throw new Error('HF API request failed');
     }
 
-    let hfData;
-    try {
-      hfData = await hfRes.json();
-    } catch (jsonErr) {
-      const text = await hfRes.text();
-      console.error('HF response not JSON:', text);
-      throw new Error('HF JSON parse failed');
-    }
+    const hfData = await hfRes.json();
 
     if (hfData?.generated_text) return hfData.generated_text;
-    if (Array.isArray(hfData) && hfData[0]?.generated_text) return hfData[0].generated_text;
+    if (Array.isArray(hfData) && hfData[0]?.generated_text)
+      return hfData[0].generated_text;
 
-    console.warn('HF returned no usable text, using dummy response');
-    return `Hi! You said: "${message}"`;
+    return `Hi! I'm Funmi. You said: "${message}"`;
   } catch (err) {
     console.error('HF completely failed', err.message);
-    return `Hi! You said: "${message}"`;
+    return `Hi! I'm Funmi. You said: "${message}"`;
   }
 }
 
 /* ======================
    IMAGE GENERATION
-   FLUX (Primary) → SDXL (Fallback)
+   FLUX → SDXL
 ====================== */
 export async function handleImage(prompt) {
 
-  /* ======================
-     1️⃣ FLUX (Primary)
-  ====================== */
+  /* -------- FLUX -------- */
   try {
     const fluxRes = await fetch(
       'https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell',
@@ -104,26 +132,16 @@ export async function handleImage(prompt) {
 
     if (!fluxRes.ok) {
       const err = await fluxRes.text();
-      console.error('FLUX API error:', err);
-      throw new Error('FLUX request failed');
+      throw new Error(err);
     }
 
     const buffer = Buffer.from(await fluxRes.arrayBuffer());
-    const base64 = buffer.toString('base64');
-
-    if (base64) {
-      console.log('FLUX image generated');
-      return `data:image/png;base64,${base64}`;
-    }
-
-    throw new Error('FLUX returned empty image');
+    return `data:image/png;base64,${buffer.toString('base64')}`;
   } catch (err) {
     console.error('FLUX failed → SDXL fallback', err.message);
   }
 
-  /* ======================
-     2️⃣ STABILITY SDXL (Fallback)
-  ====================== */
+  /* -------- SDXL -------- */
   try {
     const res = await fetch(
       'https://api.stability.ai/v2beta/stable-image/generate/sdxl',
@@ -140,19 +158,9 @@ export async function handleImage(prompt) {
       }
     );
 
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('Stability API error:', err);
-      throw new Error('Stability request failed');
-    }
+    if (!res.ok) throw new Error(await res.text());
 
     const data = await res.json();
-
-    if (!data?.image) {
-      throw new Error('SDXL returned no image');
-    }
-
-    console.log('SDXL image generated');
     return `data:image/png;base64,${data.image}`;
   } catch (err) {
     console.error('SDXL failed', err.message);
@@ -161,34 +169,25 @@ export async function handleImage(prompt) {
 }
 
 /* ======================
-   WEB / RESEARCH SEARCH
+   WEB SEARCH
 ====================== */
-export async function handleSearch(query, mode = 'Web Search') {
+export async function handleSearch(query) {
   try {
-    // Example: using Hugging Face search model (you can switch to your preferred API)
     const searchRes = await fetch(
       'https://api-inference.huggingface.co/models/deepset/roberta-base-squad2',
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.HF_API_KEY}`,
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ inputs: query })
       }
     );
 
-    if (!searchRes.ok) {
-      const text = await searchRes.text();
-      console.error('HF search error', searchRes.status, text);
-      return `No results found for: "${query}"`;
-    }
-
-    const searchData = await searchRes.json();
-    // Simplified result formatting
-    return searchData?.answer || `No results found for: "${query}"`;
-  } catch (err) {
-    console.error('Search failed', err.message);
+    const data = await searchRes.json();
+    return data?.answer || `No results found for: "${query}"`;
+  } catch {
     return `No results found for: "${query}"`;
   }
 }
@@ -197,16 +196,8 @@ export async function handleSearch(query, mode = 'Web Search') {
    FILE ANALYSIS
 ====================== */
 export async function handleFile(file) {
-  if (!file || !file.buffer) return 'No file provided';
+  if (!file?.buffer) return 'No file provided';
 
-  try {
-    // Simple example: convert file buffer to text if possible
-    const textContent = file.buffer.toString('utf-8').slice(0, 5000); // limit size
-    // Send file content to handleChat for analysis
-    const analysis = await handleChat(`Analyze this file content: ${textContent}`);
-    return analysis;
-  } catch (err) {
-    console.error('File analysis failed', err.message);
-    return 'Failed to analyze file';
-  }
+  const content = file.buffer.toString('utf-8').slice(0, 5000);
+  return handleChat(`Analyze this file content:\n${content}`);
 }
