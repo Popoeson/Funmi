@@ -16,85 +16,62 @@
   --shadow-light: 0 8px 30px rgba(0,0,0,0.08);
   --shadow-dark: 0 8px 30px rgba(0,0,0,0.4);
 }
-* { box-sizing: border-box; font-family: 'Inter', sans-serif; margin:0; padding:0; }
 
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+html, body { height: 100%; margin:0; }
 body {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
   background: radial-gradient(circle at center, #ffffff 0%, #f0f0f0 60%, #d8d8d8 100%);
   transition: background 0.4s ease;
-  color: #000;
   overflow: hidden;
 }
-
-body.dark {
-  background: radial-gradient(circle at center, #2a2f34 0%, #1f2428 100%);
-  color: #fff;
-}
-
-/* Top Bar */
-.top-bar {
-  position: sticky;
-  top:0;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  z-index: 20;
-  background: var(--glass-light);
-  backdrop-filter: var(--blur);
-  border-bottom: 1px solid var(--glass-border-light);
-}
-
-body.dark .top-bar {
-  background: var(--glass-dark);
-  border-bottom: 1px solid var(--glass-border-dark);
-}
-
-.icon-group { display: flex; gap: 10px; }
-
-.icon-btn {
-  width: 42px; height: 42px; border-radius:50%;
-  background: var(--glass-light); backdrop-filter: var(--blur);
-  border: 1px solid var(--glass-border-light); box-shadow: var(--shadow-light);
-  display: flex; align-items:center; justify-content:center; cursor:pointer;
-}
-
-body.dark .icon-btn {
-  background: var(--glass-dark); border:1px solid var(--glass-border-dark); box-shadow: var(--shadow-dark);
-}
+body.dark { background: radial-gradient(circle at center, #2a2f34 0%, #1f2428 100%); color: #fff; }
 
 /* Sidebar */
 .sidebar {
   position: fixed;
-  top: 0; left:-260px;
-  width:260px; height:100vh;
+  top: 0; left: -260px;
+  width: 260px; height: 100vh;
   background: var(--glass-light);
   backdrop-filter: var(--blur);
-  border-right:1px solid var(--glass-border-light);
+  border-right: 1px solid var(--glass-border-light);
   border-radius: 0 20px 20px 0;
-  padding:20px;
+  padding: 20px;
   transition: left 0.3s ease;
   z-index: 10;
 }
-.sidebar.open { left:0; }
-body.dark .sidebar { background: var(--glass-dark); border-right:1px solid var(--glass-border-dark); }
-
-.sidebar h3 { margin-top:0; }
-.chat-session { padding:8px; border-radius:10px; cursor:pointer; margin-bottom:8px; }
+body.dark .sidebar { background: var(--glass-dark); border-right: 1px solid var(--glass-border-dark); }
+.sidebar.open { left: 0; }
+.sidebar h3 { margin-top: 0; }
+.chat-session { padding:10px; border-radius:10px; cursor:pointer; margin-bottom:8px; }
 .chat-session:hover { background: rgba(255,255,255,0.25); }
 
-/* Welcome Center */
-.center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:10px; }
-.logo img { width:80px; margin-bottom:10px; }
+/* Top Bar */
+.top-bar {
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; gap:10px;
+  position: sticky; top:0; background:transparent; z-index:5;
+}
+
+.icon-group { display:flex; gap:10px; }
+.icon-btn {
+  width: 42px; height: 42px; border-radius:50%;
+  background: var(--glass-light);
+  backdrop-filter: var(--blur);
+  border:1px solid var(--glass-border-light);
+  box-shadow: var(--shadow-light);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+body.dark .icon-btn { background: var(--glass-dark); border:1px solid var(--glass-border-dark); box-shadow: var(--shadow-dark); color:#fff; }
 
 /* Chat Area */
-.chat-area { flex:1; overflow-y:auto; padding:20px; display:block; }
-.chat-area::-webkit-scrollbar { width:8px; }
-.chat-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius:4px; }
-body.dark .chat-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+.chat-area {
+  position: absolute;
+  top: 60px; bottom: 80px; left:0; right:0;
+  padding: 20px;
+  overflow-y: auto;
+}
 
 /* Messages */
 .message {
@@ -106,66 +83,90 @@ body.dark .chat-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2
   backdrop-filter: var(--blur);
   border: 1px solid var(--glass-border-light);
   box-shadow: var(--shadow-light);
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
+body.dark .message { background: var(--glass-dark); border:1px solid var(--glass-border-dark); box-shadow: var(--shadow-dark); }
+.message.user { margin-left:auto; }
 
-body.dark .message {
-  background: var(--glass-dark);
-  border:1px solid var(--glass-border-dark);
-  box-shadow: var(--shadow-dark);
+/* Tables inside AI messages */
+.message.ai table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
 }
-
-.message.user { margin-left: auto; }
-.message.ai img { max-width:100%; border-radius:14px; cursor:pointer; }
-
-/* Markdown Styling */
-.message.ai h1 { font-size:1.4rem; margin:10px 0; }
-.message.ai h2 { font-size:1.2rem; margin:8px 0; }
-.message.ai h3 { font-size:1.1rem; margin:6px 0; }
-.message.ai p { margin:6px 0; line-height:1.5; }
-.message.ai ul { margin:6px 0 6px 20px; }
-.message.ai li { margin-bottom:4px; }
-.message.ai blockquote {
-  border-left: 4px solid #4caf50; padding-left:10px; margin:6px 0; color:#ccc;
+.message.ai th, .message.ai td {
+  border: 1px solid #444;
+  padding: 6px;
+  text-align: left;
+  white-space: nowrap;
 }
-.message.ai pre { background:#111; color:#0f0; padding:10px; border-radius:8px; overflow-x:auto; font-size:0.9rem; }
-.message.ai table { width:100%; border-collapse:collapse; margin:8px 0; }
-.message.ai th, .message.ai td { border:1px solid #444; padding:6px; text-align:left; }
-.message.ai th { background:#222; }
+.message.ai th {
+  background: #222;
+  color: #fff;
+  font-weight:500;
+  text-align:left;
+}
+.message.ai table::-webkit-scrollbar { height:6px; }
+.message.ai table::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius:3px; }
+
+/* Center Welcome */
+.center {
+  height: calc(100vh - 160px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+}
+.logo img { width:80px; margin-bottom:10px; }
 
 /* Input Bar */
 .input-bar {
+  position: absolute;
+  bottom:0; left:0; right:0;
+  padding: 20px 15px;
   display:flex; align-items:flex-end; gap:10px;
-  padding:10px 15px;
-  background: var(--glass-light);
+  background: rgba(255,255,255,0.15);
   backdrop-filter: var(--blur);
-  border-top:1px solid var(--glass-border-light);
 }
-
-body.dark .input-bar {
-  background: var(--glass-dark);
-  border-top:1px solid var(--glass-border-dark);
-}
+body.dark .input-bar { background: rgba(0,0,0,0.2); }
 
 .input-wrapper {
   flex:1; display:flex; align-items:center; gap:10px;
-  background: var(--glass-light); backdrop-filter: var(--blur);
+  background: var(--glass-light);
+  backdrop-filter: var(--blur);
   border:1px solid var(--glass-border-light);
+  box-shadow: var(--shadow-light);
   border-radius:18px; padding:10px;
 }
+body.dark .input-wrapper { background: var(--glass-dark); border:1px solid var(--glass-border-dark); box-shadow: var(--shadow-dark); }
 
-body.dark .input-wrapper {
-  background: var(--glass-dark);
-  border:1px solid var(--glass-border-dark);
+textarea {
+  flex:1; width:100%; resize:none; border:none; outline:none;
+  background:transparent; font-size:15px; min-height:40px; max-height:220px; color:inherit;
 }
 
-textarea { flex:1; width:100%; resize:none; border:none; outline:none; background:transparent; font-size:15px; min-height:40px; max-height:220px; color:inherit; }
+.send-btn {
+  width:42px; height:42px; border-radius:50%;
+  background: var(--glass-light); backdrop-filter: var(--blur);
+  border:1px solid var(--glass-border-light);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  box-shadow: var(--shadow-light);
+}
+body.dark .send-btn { background: var(--glass-dark); border:1px solid var(--glass-border-dark); box-shadow: var(--shadow-dark); color:#fff; }
 
-/* Mode Indicator & Menu */
-.mode-indicator { position:sticky; bottom:60px; left:50%; transform:translateX(-50%); font-size:13px; opacity:0.8; }
+/* Mode Indicator */
+.mode-indicator {
+  position: absolute; bottom: 70px; left:50%;
+  transform: translateX(-50%);
+  font-size:13px; opacity:0.8;
+}
+
+/* Mode Menu */
 .mode-menu {
-  position:fixed; bottom:80px; right:20px;
-  background: var(--glass-light); backdrop-filter:var(--blur);
+  position:absolute; bottom:80px; right:20px;
+  background: var(--glass-light); backdrop-filter: var(--blur);
   border:1px solid var(--glass-border-light); border-radius:14px; padding:10px;
   display:none;
 }
@@ -174,20 +175,14 @@ body.dark .mode-menu { background: var(--glass-dark); border:1px solid var(--gla
 .mode-menu div:hover { background: rgba(255,255,255,0.25); }
 
 /* Image Modal */
-#imageModal { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:9999; }
-#imageModal img { max-width:90%; border-radius:12px; }
-#imageModal #modalDownload { position:absolute; top:10px; right:50px; color:white; font-size:20px; cursor:pointer; }
-#imageModal #modalClose { position:absolute; top:10px; right:10px; color:white; font-size:24px; cursor:pointer; }
-
-/* Responsive Fixes */
-@media (max-width:600px){
-  .top-bar { padding:0 10px; height:50px; }
-  .icon-btn { width:36px; height:36px; }
-  .input-bar { padding:8px; }
-  textarea { font-size:14px; min-height:35px; }
-  .mode-menu { right:10px; bottom:70px; }
-  .mode-indicator { bottom:50px; font-size:12px; }
+.modal {
+  position:fixed; inset:0; background:rgba(0,0,0,.85);
+  display:none; align-items:center; justify-content:center; z-index:9999;
 }
+.modal img { max-width:90%; border-radius:12px; }
+.modal #modalClose { position:absolute; top:10px; right:10px; color:white; font-size:24px; cursor:pointer; }
+.modal #modalDownload { position:absolute; top:10px; right:50px; color:white; font-size:20px; cursor:pointer; }
+
 </style>
 </head>
 <body>
@@ -240,16 +235,13 @@ body.dark .mode-menu { background: var(--glass-dark); border:1px solid var(--gla
 </div>
 
 <!-- Image Modal -->
-<div id="imageModal">
-  <img id="modalImg"/>
-  <a id="modalDownload" download>⬇</a>
+<div class="modal" id="modal">
+  <img id="modalImg">
   <span id="modalClose">✖</span>
+  <a id="modalDownload" download>⬇</a>
 </div>
 
 <script>
-/* ======================
-   ELEMENTS
-====================== */
 const sidebar = document.getElementById('sidebar');
 const menuBtn = document.getElementById('menuBtn');
 const themeBtn = document.getElementById('themeBtn');
@@ -260,24 +252,20 @@ const input = document.getElementById('input');
 const welcome = document.getElementById('welcome');
 const chatArea = document.getElementById('chatArea');
 const sendBtn = document.getElementById('sendBtn');
-const imageModal = document.getElementById('imageModal');
+const modal = document.getElementById('modal');
 const modalImg = document.getElementById('modalImg');
-const modalDownload = document.getElementById('modalDownload');
 const modalClose = document.getElementById('modalClose');
+const modalDownload = document.getElementById('modalDownload');
 
 const API_URL = 'https://funmi-ure7.onrender.com/api';
 let currentMode = 'Default';
 let currentSessionId = null;
 let loadingMsg = null;
 
-/* ======================
-   UI CONTROLS
-====================== */
+/* UI Controls */
 menuBtn.onclick = () => sidebar.classList.toggle('open');
 themeBtn.onclick = () => document.body.classList.toggle('dark');
-modeBtn.onclick = () =>
-  modeMenu.style.display = modeMenu.style.display === 'block' ? 'none' : 'block';
-
+modeBtn.onclick = () => modeMenu.style.display = modeMenu.style.display === 'block' ? 'none' : 'block';
 modeMenu.querySelectorAll('div').forEach(item => {
   item.onclick = () => {
     currentMode = item.dataset.mode;
@@ -286,19 +274,14 @@ modeMenu.querySelectorAll('div').forEach(item => {
   };
 });
 
-/* ======================
-   INPUT AUTO-RESIZE
-====================== */
+/* Input auto-resize */
 input.addEventListener('input', () => {
   input.style.height = 'auto';
   input.style.height = input.scrollHeight + 'px';
 });
 
-/* ======================
-   MARKDOWN RENDERER
-====================== */
-function renderMarkdown(text){
-  if(!text) return '';
+/* Markdown Renderer */
+function renderMarkdown(text) {
   return text
     .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -308,96 +291,53 @@ function renderMarkdown(text){
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/^- (.*$)/gim, '<li>$1</li>')
     .replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>')
-    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
     .replace(/\n/g, '<br>');
 }
 
-/* ======================
-   IMAGE MODAL
-====================== */
-modalClose.onclick = () => imageModal.style.display = 'none';
-imageModal.onclick = e => { if(e.target === imageModal) imageModal.style.display='none'; };
+/* Image Modal */
+modalClose.onclick = () => modal.style.display = 'none';
+modal.onclick = e => { if(e.target === modal) modal.style.display='none'; };
 
-/* ======================
-   HELPERS
-====================== */
-function scrollDown(){ chatArea.scrollTo({top:chatArea.scrollHeight, behavior:'smooth'}); }
-
-function addUserMessage(text){
-  const msg=document.createElement('div'); msg.className='message user'; msg.textContent=text;
-  chatArea.appendChild(msg); scrollDown();
-}
-
-function addAIText(text){
-  const msg=document.createElement('div'); msg.className='message ai'; msg.innerHTML=renderMarkdown(text); 
-  chatArea.appendChild(msg); scrollDown();
-}
-
-function addAIImage(src){
-  const wrapper=document.createElement('div'); wrapper.className='message ai';
-  const img=document.createElement('img'); img.src=src;
-  img.onclick=()=>{ imageModal.style.display='flex'; modalImg.src=src; modalDownload.href=src; }
-  img.onerror=()=>{ img.replaceWith(document.createTextNode('⚠ Image failed to load')); }
-  wrapper.appendChild(img); chatArea.appendChild(wrapper); scrollDown();
-}
-
-function addLoading(){
-  loadingMsg=document.createElement('div'); loadingMsg.className='message ai loading';
-  loadingMsg.textContent='Funmi is generating...'; chatArea.appendChild(loadingMsg); scrollDown();
-}
-
+/* Helpers */
+function scrollDown() { chatArea.scrollTo({ top: chatArea.scrollHeight, behavior:'smooth' }); }
+function addUserMessage(text) { const msg=document.createElement('div'); msg.className='message user'; msg.textContent=text; chatArea.appendChild(msg); scrollDown(); }
+function addAIText(text) { const msg=document.createElement('div'); msg.className='message ai'; msg.innerHTML = renderMarkdown(text); chatArea.appendChild(msg); scrollDown(); }
+function addAIImage(src){ const wrapper=document.createElement('div'); wrapper.className='message ai'; const img=document.createElement('img'); img.src=src; img.style.maxWidth='100%'; img.style.borderRadius='14px'; img.style.cursor='pointer'; img.onclick=()=>{ modal.style.display='flex'; modalImg.src=src; modalDownload.href=src; }; img.onerror=()=>{ img.replaceWith(document.createTextNode('⚠ Image failed to load')); }; wrapper.appendChild(img); chatArea.appendChild(wrapper); scrollDown(); }
+function addLoading(){ loadingMsg = document.createElement('div'); loadingMsg.className='message ai loading'; loadingMsg.textContent='Funmi is generating...'; chatArea.appendChild(loadingMsg); scrollDown(); }
 function removeLoading(){ if(loadingMsg){ chatArea.removeChild(loadingMsg); loadingMsg=null; } }
 
-/* ======================
-   SEND MESSAGE
-====================== */
-async function sendMessage(){
+/* Send Message */
+async function sendMessage() {
   const text=input.value.trim(); if(!text) return;
   welcome.style.display='none'; chatArea.style.display='block';
   addUserMessage(text); input.value=''; input.style.height='auto'; addLoading();
+
   try{
     if(!currentSessionId){
-      const s=await fetch(`${API_URL}/session`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sessionName:currentMode})
-      });
-      currentSessionId=(await s.json())._id;
+      const s = await fetch(`${API_URL}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sessionName:currentMode}) });
+      currentSessionId = (await s.json())._id;
     }
 
-    const res=await fetch(`${API_URL}/message`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({sessionId:currentSessionId, message:text, mode:currentMode})
-    });
-
-    let aiContent=(await res.json()).aiMessage?.content||'';
-    aiContent = aiContent.replace(/ChatGPT/gi,'Funmi'); // enforce Funmi name
+    const res = await fetch(`${API_URL}/message`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sessionId: currentSessionId, message: text, mode: currentMode }) });
+    const aiContent = (await res.json()).aiMessage?.content || '';
     removeLoading();
 
     const isImage = aiContent.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|webp)$/i.test(aiContent);
     if(currentMode==='Generate Image' && isImage){ addAIImage(aiContent); } else { addAIText(aiContent); }
 
-  }catch(err){ removeLoading(); console.error(err); addAIText('Something went wrong.'); }
+  }catch(err){ removeLoading(); console.error(err); addAIText('Something went wrong.', true); }
 }
 
-/* ======================
-   EVENTS
-====================== */
-sendBtn.onclick=sendMessage;
-input.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
-document.addEventListener('click', e=>{ if(!sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('open'); });
+/* Events */
+sendBtn.onclick = sendMessage;
+input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+document.addEventListener('click', e => { if(!sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('open'); });
 
-/* ======================
-   INIT SESSION
-====================== */
+/* Init Session */
 (async function init(){
   try{
-    const r=await fetch(`${API_URL}/session`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({sessionName:currentMode})
-    });
-    currentSessionId=(await r.json())._id;
+    const r = await fetch(`${API_URL}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sessionName:currentMode}) });
+    currentSessionId = (await r.json())._id;
   }catch(e){ console.error('Session init failed'); }
 })();
 </script>
