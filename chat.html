@@ -219,6 +219,43 @@ body.dark .mode-menu { background: var(--glass-dark); border:1px solid var(--gla
 .modal img { max-width:90%; border-radius:12px; }  
 .modal #modalClose { position:absolute; top:10px; right:10px; color:white; font-size:24px; cursor:pointer; }  
 .modal #modalDownload { position:absolute; top:10px; right:50px; color:white; font-size:20px; cursor:pointer; }  
+
+/* ===============================
+   KaTeX FIX: Prevent horizontal overflow
+   =============================== */
+
+/* Never allow horizontal scroll globally */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Allow AI content to wrap safely */
+.ai-content {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* KaTeX display math ( \[ ... \] ) */
+.katex-display {
+  max-width: 100%;
+  overflow-x: auto;          /* fallback if formula is extremely long */
+  overflow-y: hidden;
+  padding: 6px 0;
+}
+
+/* Force KaTeX to wrap instead of overflow */
+.katex {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+/* Inner KaTeX HTML */
+.katex-html {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
   
 </style>
 </head>
