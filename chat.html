@@ -373,8 +373,19 @@ input.addEventListener('input', () => {
   input.style.height = input.scrollHeight + 'px';
 });
 
-/* Markdown Renderer */
+/* ===============================
+   Markdown Renderer (KaTeX-safe)
+   =============================== */
 function renderMarkdown(text) {
+
+  // 0. Protect LaTeX blocks
+  const latexBlocks = [];
+  text = text.replace(/(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g, (m) => {
+    const key = `@@LATEX${latexBlocks.length}@@`;
+    latexBlocks.push(m);
+    return key;
+  });
+
   // 1. Code blocks
   text = text.replace(/```([\s\S]*?)```/g, (m, code) => {
     return `<pre><code>${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`;
@@ -407,63 +418,100 @@ function renderMarkdown(text) {
   text = text.replace(/^- (.*$)/gim,'<li>$1</li>');
   text = text.replace(/(<li>.*<\/li>)/gims,'<ul>$1</ul>');
 
-  // 6. Example blocks: wrap lines starting with "1." or "2." as example-block
+  // 6. Example calculations
   text = text.replace(/(^\d+\..+(\n.+)*)/gm, '<div class="example-block">$1</div>');
 
-  // 7. Line breaks
+  // 7. Line breaks (skip inside tables, code, divs)
   text = text.replace(/\n(?!<\/?(table|thead|tbody|tr|td|th|ul|li|pre|code|div))/g,'<br>');
+
+  // 8. Restore LaTeX blocks
+  latexBlocks.forEach((block, i) => {
+    text = text.replace(`@@LATEX${i}@@`, block);
+  });
 
   return text;
 }
 
-/* Image Modal */
-modalClose.onclick = () => modal.style.display = 'none';
-modal.onclick = e => { if(e.target === modal) modal.style.display='none'; };
-
-/* Helpers */
-function scrollDown() { chatArea.scrollTo({ top: chatArea.scrollHeight, behavior:'smooth' }); }
-
-function addUserMessage(text) {
-  const msg = document.createElement('div');
-  msg.className = 'message user';
-  msg.textContent = text;
-
-  let pressTimer;
-  msg.addEventListener('mousedown', () => {
-    pressTimer = setTimeout(() => {
-      navigator.clipboard.writeText(text);
-      msg.style.background = '#4caf50';
-      setTimeout(() => msg.style.background = '', 500);
-    }, 1000);
-  });
-  msg.addEventListener('mouseup', () => clearTimeout(pressTimer));
-  msg.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-
-  chatArea.appendChild(msg);
-  scrollDown();
-}
-
-/* AI Text with GPT-style math & examples */
+/* ===============================
+   AI Text with GPT-style math
+   =============================== */
 function addAIText(text) {
   const section = document.createElement('div');
   section.className = 'ai-section';
   const content = document.createElement('div');
   content.className = 'ai-content';
 
-  // Render markdown
+  // 1️⃣ Render Markdown (KaTeX-safe)
   content.innerHTML = renderMarkdown(text);
+  section.appendChild(content);
+  chatArea.appendChild(section);
+  scrollDown();
 
-  // Render KaTeX
+  // 2️⃣ Render KaTeX AFTER DOM append
   if(window.renderMathInElement){
     renderMathInElement(content, {
       delimiters: [
         { left:"\\(", right:"\\)", display:false },
-        { left:"\\[", right:"\\]", display:true }
+        { left:"\\[", right:"\\]", display:true },
+        { left:"$$", right:"$$", display:true }
       ],
       throwOnError:false
     });
   }
 
+  // 3️⃣ Footer icons
+  const footer = document.createElement('div');
+  footer.className = 'ai-footer';
+  const copyIcon = document.createElement('i');
+  copyIcon.className = 'fas fa-copy';
+  copyIcon.title = 'Copy';
+  copyIcon.onclick = () => {
+    navigator.clipboard.writeText(text);
+    copyIcon.style.color = '#4caf50';
+    setTimeout(() => copyIcon.style.color = '#888', 800);
+  };
+  const thumbsUp = document.createElement('i');
+  thumbsUp.className = 'fas fa-thumbs-up';
+  thumbsUp.title = 'Helpful';
+  thumbsUp.onclick = () => { thumbsUp.style.color='#4caf50'; thumbsDown.style.color='#888'; };
+  const thumbsDown = document.createElement('i');
+  thumbsDown.className = 'fas fa-thumbs-down';
+  thumbsDown.title = 'Not helpful';
+  thumbsDown.onclick = () => { thumbsDown.style.color='#f44336'; thumbsUp.style.color='#888'; };
+  footer.appendChild(copyIcon);
+  footer.appendChild(thumbsUp);
+  footer.appendChild(thumbsDown);
+  section.appendChild(footer);
+}
+
+/* ===============================
+   Image Modal (keep this)
+   =============================== */
+modalClose.onclick = () => modal.style.display = 'none';
+modal.onclick = e => { 
+  if(e.target === modal) modal.style.display='none'; 
+};
+
+/* Function to display AI images */
+function addAIImage(src){
+  const section = document.createElement('div');
+  section.className = 'ai-section';
+  const content = document.createElement('div');
+  content.className = 'ai-content';
+  const img = document.createElement('img');
+  img.src = src;
+  // Open modal on click
+  img.onclick = () => { 
+    modal.style.display='flex'; 
+    modalImg.src = src; 
+    modalDownload.href = src; 
+  };
+  img.onerror = () => { img.replaceWith(document.createTextNode('⚠ Image failed to load')); };
+  content.appendChild(img);
+  section.appendChild(content);
+  chatArea.appendChild(section);
+  scrollDown();
+}
   // Footer
   const footer = document.createElement('div');
   footer.className = 'ai-footer';
