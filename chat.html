@@ -432,34 +432,27 @@ function renderMarkdown(text) {
   return text;
 }
 
-// ====== FINAL AUTO-MATH FIX — WORKS FOR YOUR AI'S OUTPUT =======
+// ====== FINAL AUTO-MATH FIX =======
+
 function autoWrapMath(text) {
-  // Step 1: Clean every possible variation of the old broken tags
+  // Clean broken tags
   text = text.replace(/{frac\{4\}\{3\}}/gi, '\\frac{4}{3}');
   text = text.replace(/{frac\{(\d+)\}\{(\d+)\}}/gi, '\\frac{$1}{$2}');
   text = text.replace(/\|pi\|/gi, '\\pi');
   text = text.replace(/\|pi/gi, '\\pi');
   text = text.replace(/pi\|/gi, '\\pi');
-  text = text.replace(/r\^ ?\{?3\}?/gi, 'r^3');
-  text = text.replace(/r\^ ?\{?2\}?/gi, 'r^2');
-  text = text.replace(/\(3\)\^ ?\{?3\}?/gi, '3^3');
-  text = text.replace(/\|/g, ''); // remove all pipes
+  text = text.replace(/r\^3/gi, 'r^3');
+  text = text.replace(/r\^2/gi, 'r^2');
+  text = text.replace(/\|/g, '');
 
-  // Step 2: Remove extra parentheses around entire formulas
-  text = text.replace(/\(([A-Z]\s*=\s*[^()]+)\)/g, '$1');
-
-  // Step 3: Replace Unicode π
+  // Replace Unicode
   text = text.replace(/π/g, '\\pi');
 
-  // Step 4: Force-wrap any line that looks like a formula introduction
-  text = text.replace(
-    /(\n|^)(\s*)([A-Z]\s*=\s*[^<\n]+)(\n|$)/gim,
-    '$1$2\\($3\\)'
-  );
+  // Wrap any line that is a formula (has =)
+  text = text.replace(/(\n|^)(\s*)([A-Z]\s*=\s*.+)/gim, '$1$2\\($3\\)');
 
   return text;
 }
-
 /* ===============================
    Helpers
    =============================== */
