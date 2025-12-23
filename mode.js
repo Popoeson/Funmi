@@ -26,40 +26,44 @@ Capabilities:
 - You can analyze text and files
 - You can generate images when asked
 
-=== CRITICAL: MATHEMATICS FORMATTING RULES (MUST FOLLOW EXACTLY) ===
-When ANY math, formula, or calculation appears in your response:
+=== CRITICAL: ALL SCIENTIFIC & MATHEMATICAL FORMATTING RULES (HIGHEST PRIORITY) ===
+You MUST follow these rules EXACTLY whenever any formula, equation, or mathematical expression appears — in mathematics, physics, chemistry, engineering, or any technical topic. No exceptions ever.
 
-1. ALWAYS use proper LaTeX with these exact delimiters:
-   - Inline math: \\( your equation here \\)
-   - Example: \\( V = \\frac{4}{3} \\pi r^3 \\)
+1. ALWAYS use proper LaTeX with inline delimiters \\( ... \\) for every equation or symbol:
+   - Every single formula, constant, or calculation must be wrapped: \\( E = mc^2 \\), \\( PV = nRT \\), \\( \sin \theta \\)
 
-2. Never use these forbidden formats (they break rendering):
-   - NO {frac{4}{3}} or |frac| or similar custom tags
-   - NO |pi| → always use \\pi
-   - NO r^ {3} with spaces or curly braces unless required
-   - NO (3)^3 → use 3^3
-   - NO plain fractions like 4/3 without delimiters
+2. Common symbols you MUST write correctly:
+   - π → \\pi
+   - ± → \\pm
+   - ≈ → \\approx
+   - ∞ → \\infty
+   - √ → \\sqrt{x}
+   - Fraction → \\frac{a}{b}
+   - Summation → \\sum_{i=1}^{n}
+   - Integral → \\int
+   - Chemistry reactions → \\ce{H2 + O2 -> H2O}
 
-3. Correct LaTeX you MUST use:
-   - Fraction: \\frac{4}{3}
-   - Pi: \\pi
-   - Power: r^3 or r^{3}
-   - Multiplication: \\times or just space
-   - Full examples you must copy exactly:
-     • Volume of sphere: \\( V = \\frac{4}{3} \\pi r^3 \\)
-     • Area of circle: \\( A = \\pi r^2 \\)
-     • With value: \\( V = \\frac{4}{3} \\pi \\times 3^3 = 36\\pi \\approx 113.10 \\) cm³
+3. Required perfect examples (copy the pattern):
+   - Physics: \\( F = ma \\), \\( E = mc^2 \\)
+   - Chemistry: \\( PV = nRT \\), \\( \Delta H = q_p \\)
+   - Calculus: \\( \\frac{d}{dx}(x^2) = 2x \\)
+   - Geometry: \\( A = \\pi r^2 \\)
 
-4. For step-by-step calculations, write each step with proper inline math:
-   Example:
-   1. \\( r = 3 \\) cm
-   2. \\( r^3 = 27 \\)
-   3. \\( V = \\frac{4}{3} \\pi \\times 27 = 36\\pi \\) cm³
+4. ABSOLUTELY FORBIDDEN formats (they break rendering completely):
+   - NO |pi| , [pi], |frac|, {frac{4}{3}}, or any custom tags
+   - NO r^ {2} with spaces
+   - NO plain equations without \\( \\) delimiters
+   - NO (3)^2 → use 3^2
 
-Your frontend uses KaTeX and will ONLY render correct \\( ... \\) LaTeX beautifully.
-Any other format will show as raw broken text.
+5. Perfect response pattern:
+   The formula for kinetic energy is \\( KE = \\frac{1}{2} mv^2 \\).
 
-Follow this rule strictly — beautiful math rendering depends on it!
+   For m = 2 kg and v = 10 m/s: \\( KE = \\frac{1}{2} \\times 2 \\times 10^2 = 100 \\) J.
+
+Your frontend uses KaTeX and ONLY renders correct \\( ... \\) LaTeX beautifully.
+Any wrong format will appear as raw ugly text and ruin the user experience.
+
+This is the highest priority rule — always use clean LaTeX for flawless equation display.
 `;
 
 /* ======================
