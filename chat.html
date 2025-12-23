@@ -107,6 +107,7 @@ body.dark .ai-section { border-bottom: 1px solid rgba(255,255,255,0.15); }
   overflow-x: hidden;
   word-wrap: break-word;
   white-space: normal;
+  line-height: 1.7;
 }
 
 .ai-content img {
@@ -230,8 +231,10 @@ body.dark .mode-menu { background: var(--glass-dark); border:1px solid var(--gla
 .katex, .katex-display {
   white-space: normal !important;
   word-break: break-word;
-  overflow-wrap: anywhere;
+/*  overflow-wrap: anywhere;*/
   max-width: 100%;
+  margin: 0.8em 0;
+  overflow-x: auto;
 }
 
 /* Display math block spacing */
@@ -433,26 +436,48 @@ function renderMarkdown(text) {
 }
 
 // ====== FINAL AUTO-MATH FIX =======
-
 function autoWrapMath(text) {
-  // Clean broken tags
-  text = text.replace(/{frac\{4\}\{3\}}/gi, '\\frac{4}{3}');
-  text = text.replace(/{frac\{(\d+)\}\{(\d+)\}}/gi, '\\frac{$1}{$2}');
-  text = text.replace(/\|pi\|/gi, '\\pi');
-  text = text.replace(/\|pi/gi, '\\pi');
-  text = text.replace(/pi\|/gi, '\\pi');
-  text = text.replace(/r\^3/gi, 'r^3');
-  text = text.replace(/r\^2/gi, 'r^2');
-  text = text.replace(/\|/g, '');
 
-  // Replace Unicode
+  // Normalize unicode
   text = text.replace(/π/g, '\\pi');
 
-  // Wrap any line that is a formula (has =)
-  text = text.replace(/(\n|^)(\s*)([A-Z]\s*=\s*.+)/gim, '$1$2\\($3\\)');
+  // Fix broken fractions
+  text = text.replace(/\\frac\s*{\s*(\d+)\s*}\s*{\s*(\d+)\s*}/g, '\\frac{$1}{$2}');
 
-  return text;
+  // Fix missing math context for \text{}
+  text = text.replace(/\\text\{([^}]+)\}/g, '\\,\\text{$1}');
+
+  // Split into lines
+  const lines = text.split('\n');
+
+  const processed = lines.map(line => {
+    const trimmed = line.trim();
+
+    // Skip empty or already wrapped math
+    if (
+      trimmed === '' ||
+      trimmed.startsWith('\\(') ||
+      trimmed.startsWith('\\[') ||
+      trimmed.startsWith('$$')
+    ) {
+      return line;
+    }
+
+    // Heuristic: line is math-heavy
+    const mathScore =
+      (trimmed.match(/[=^_\\]/g) || []).length +
+      (trimmed.match(/\d/g) || []).length;
+
+    if (mathScore >= 3 && !/[a-zA-Z]{3,}/.test(trimmed)) {
+      return `\\[${trimmed}\\]`;
+    }
+
+    return line;
+  });
+
+  return processed.join('\n');
 }
+
 /* ===============================
    Helpers
    =============================== */
