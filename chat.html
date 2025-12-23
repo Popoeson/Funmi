@@ -435,45 +435,38 @@ function renderMarkdown(text) {
 }
 
 // ====== FINAL AUTO-MATH FIX =======
-
 function autoWrapMath(text) {
 
-  // Normalize unicode
+  // Normalize symbols
   text = text.replace(/π/g, '\\pi');
 
-  // Split chained math into steps
-  text = text.replace(/⟹|⇒/g, '\n');
-
-  // Break long equal chains into lines
-  text = text.replace(/=\s*/g, '=\n');
-
-  // Fix broken fractions
-  text = text.replace(/\\frac\s*{\s*(\d+)\s*}\s*{\s*(\d+)\s*}/g, '\\frac{$1}{$2}');
-
-  // Split into lines
+  // Respect existing line breaks
   const lines = text.split('\n');
 
   const processed = lines.map(line => {
     const trimmed = line.trim();
 
+    // Skip empty lines
+    if (!trimmed) return '';
+
+    // If line already contains KaTeX delimiters → leave it alone
     if (
-      trimmed === '' ||
-      trimmed.startsWith('\\(') ||
       trimmed.startsWith('\\[') ||
+      trimmed.startsWith('\\(') ||
       trimmed.startsWith('$$')
     ) {
       return line;
     }
 
-    // Detect math-heavy lines
-    const mathScore =
-      (trimmed.match(/[=^_\\]/g) || []).length +
-      (trimmed.match(/\d/g) || []).length;
+    // Detect CLEAN math lines only
+    const isCleanMath =
+      /^[\d\s=+\-*/().\\^_π]+$/.test(trimmed);
 
-    if (mathScore >= 2 && !/[a-zA-Z]{3,}/.test(trimmed)) {
+    if (isCleanMath) {
       return `\\[${trimmed}\\]`;
     }
 
+    // Otherwise, leave as readable text
     return line;
   });
 
