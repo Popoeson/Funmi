@@ -54,7 +54,7 @@ router.post('/session', devUser, async (req, res) => {
  */
 router.post('/message', devUser, upload.single('file'), async (req, res) => {
   try {
-    const { sessionId, message, mode } = req.body;
+    let { sessionId, message, mode } = req.body;
     const sessions = req.app.locals.db.collection('sessions');
 
     const session = await sessions.findOne({
@@ -76,6 +76,22 @@ router.post('/message', devUser, upload.single('file'), async (req, res) => {
       { $push: { messages: userMessage }, $set: { updatedAt: new Date() } }
     );
 
+    // ===== Minimal Intent Detection =====
+    if (!mode || mode === 'Default') {
+      const input = message.toLowerCase();
+
+      if (/generate|draw|create|image|picture|illustration/.test(input)) {
+        mode = 'Generate Image';
+      } else if (/analyze|summarize|check tone|extract/.test(input)) {
+        mode = 'Analyze Files';
+      } else if (/search|find|look up|what is|who is|how to/.test(input)) {
+        mode = 'Web Search';
+      } else {
+        mode = 'Default';
+      }
+    }
+    // ====================================
+
     let funmiResponse;
 
     // Call the correct handler based on mode
@@ -84,9 +100,8 @@ router.post('/message', devUser, upload.single('file'), async (req, res) => {
         funmiResponse = await handleImage(message);
         break;
 
-      case 'Research':
       case 'Web Search':
-        funmiResponse = await handleSearch(message, mode);
+        funmiResponse = await handleSearch(message);
         break;
 
       case 'Analyze Files':
