@@ -486,31 +486,33 @@ function addUserMessage(text) {
 function addAIText(text) {
   const section = document.createElement('div');
   section.className = 'ai-section';
+
   const content = document.createElement('div');
   content.className = 'ai-content';
 
-  // First: render markdown (tables, headings, code blocks) and protect existing LaTeX
-  content.innerHTML = renderMarkdown(text);
+  // ✅ 1. Fix math FIRST (RAW text only)
+  const fixedText = autoWrapMath(text);
 
-  // Second: fix broken math tags and add missing delimiters
-  content.innerHTML = autoWrapMath(content.innerHTML);
+  // ✅ 2. Then render markdown
+  content.innerHTML = renderMarkdown(fixedText);
 
   section.appendChild(content);
   chatArea.appendChild(section);
   scrollDown();
 
-  // KaTeX: Render entire chat area for maximum reliability
+  // ✅ 3. KaTeX render AFTER DOM insertion
   if (window.renderMathInElement) {
-    renderMathInElement(chatArea, {
-     delimiters: [
-  { left: "\\(", right: "\\)", display: false },
-  { left: "\\[", right: "\\]", display: true },
-  { left: "\[ ", right: " \]", display: true }
-],
-     throwOnError: false,
+    renderMathInElement(content, {
+      delimiters: [
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true },
+        { left: "$$", right: "$$", display: true }
+      ],
+      throwOnError: false,
       strict: false
     });
   }
+}
   // Footer icons
   const footer = document.createElement('div');
   footer.className = 'ai-footer';
