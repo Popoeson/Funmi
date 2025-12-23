@@ -432,18 +432,26 @@ function renderMarkdown(text) {
   return text;
 }
 
-// ====== AUTO-MATH RENDERING=======
+// ====== SMARTER AUTO-MATH WRAPPING (Safe fallback) =======
 function autoWrapMath(text) {
-  return text.replace(
-    /(^|[\n ])([a-zA-Z0-9]+(\^|\_|\+|\-|\=|\(|\)|\/)[^ \n]+)/g,
-    (match, start, expr) => `${start}\\(${expr}\\)`
-  );
+  // Only wrap bare math patterns NOT already inside LaTeX delimiters
+  return text
+    .replace(/(?<!(?:\\|\$\$|\\\[|\\\(|\$))([a-zA-Z]\w*)\^(\{)?([^}{ \n]+)(\})?/g, '\\($1^$3\\)')
+    .replace(/(?<!(?:\\|\$\$|\\\[|\\\(|\$))(\d+)\/(\d+)/g, '\\($1/$2\\)')
+    .replace(/π/g, '\\pi')
+    .replace(/≈/g, '\\approx')
+    .replace(/±/g, '\\pm')
+    .replace(/∞/g, '\\infty');
+    // Note: √ handled better by AI using \sqrt{}
 }
 
 /* ===============================
    Helpers
    =============================== */
-function scrollDown() { chatArea.scrollTo({ top: chatArea.scrollHeight, behavior:'smooth' }); }
+function scrollDown() { 
+  chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' }); 
+}
+
 function addUserMessage(text) {
   const msg = document.createElement('div');
   msg.className = 'message user';
@@ -472,34 +480,55 @@ function addAIText(text) {
   section.className = 'ai-section';
   const content = document.createElement('div');
   content.className = 'ai-content';
+
   const processedText = autoWrapMath(text);
-  content.innerHTML =        renderMarkdown(processedText);
+  content.innerHTML = renderMarkdown(processedText);
+
   section.appendChild(content);
   chatArea.appendChild(section);
   scrollDown();
 
-  // KaTeX rendering
-  if(window.renderMathInElement){
-    renderMathInElement(content, {
+  // KaTeX: Render entire chat area for maximum reliability
+  if (window.renderMathInElement) {
+    renderMathInElement(chatArea, {
       delimiters: [
-        { left:"\\(", right:"\\)", display:false },
-        { left:"\\[", right:"\\]", display:true },
-        { left:"$$", right:"$$", display:true }
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\[ ", right: " \]", display: true }
       ],
-      throwOnError:false
+      throwOnError: false,
+      strict: false
     });
   }
 
   // Footer icons
   const footer = document.createElement('div');
   footer.className = 'ai-footer';
-  const copyIcon = document.createElement('i'); copyIcon.className='fas fa-copy';
-  copyIcon.title='Copy'; copyIcon.onclick=()=>{ navigator.clipboard.writeText(text); copyIcon.style.color='#4caf50'; setTimeout(()=>copyIcon.style.color='#888',800); };
-  const thumbsUp = document.createElement('i'); thumbsUp.className='fas fa-thumbs-up'; thumbsUp.title='Helpful';
-  const thumbsDown = document.createElement('i'); thumbsDown.className='fas fa-thumbs-down'; thumbsDown.title='Not helpful';
-  thumbsUp.onclick=()=>{ thumbsUp.style.color='#4caf50'; thumbsDown.style.color='#888'; };
-  thumbsDown.onclick=()=>{ thumbsDown.style.color='#f44336'; thumbsUp.style.color='#888'; };
-  footer.appendChild(copyIcon); footer.appendChild(thumbsUp); footer.appendChild(thumbsDown);
+  const copyIcon = document.createElement('i'); 
+  copyIcon.className = 'fas fa-copy';
+  copyIcon.title = 'Copy'; 
+  copyIcon.onclick = () => { 
+    navigator.clipboard.writeText(text); 
+    copyIcon.style.color = '#4caf50'; 
+    setTimeout(() => copyIcon.style.color = '#888', 800); 
+  };
+  const thumbsUp = document.createElement('i'); 
+  thumbsUp.className = 'fas fa-thumbs-up'; 
+  thumbsUp.title = 'Helpful';
+  const thumbsDown = document.createElement('i'); 
+  thumbsDown.className = 'fas fa-thumbs-down'; 
+  thumbsDown.title = 'Not helpful';
+  thumbsUp.onclick = () => { 
+    thumbsUp.style.color = '#4caf50'; 
+    thumbsDown.style.color = '#888'; 
+  };
+  thumbsDown.onclick = () => { 
+    thumbsDown.style.color = '#f44336'; 
+    thumbsUp.style.color = '#888'; 
+  };
+  footer.appendChild(copyIcon); 
+  footer.appendChild(thumbsUp); 
+  footer.appendChild(thumbsDown);
   section.appendChild(footer);
 }
 
@@ -513,21 +542,39 @@ function addAIImage(src) {
   content.className = 'ai-content';
   const img = document.createElement('img');
   img.src = src;
-  img.onclick = () => { modal.style.display='flex'; modalImg.src=src; modalDownload.href=src; };
-  img.onerror = () => { img.replaceWith(document.createTextNode('⚠ Image failed to load')); };
+  img.onclick = () => { 
+    modal.style.display = 'flex'; 
+    modalImg.src = src; 
+    modalDownload.href = src; 
+  };
+  img.onerror = () => { 
+    img.replaceWith(document.createTextNode('⚠ Image failed to load')); 
+  };
   content.appendChild(img);
   section.appendChild(content);
 
-  // Footer icons
+  // Footer icons (same as text)
   const footer = document.createElement('div');
   footer.className = 'ai-footer';
-  const copyIcon = document.createElement('i'); copyIcon.className='fas fa-copy';
-  copyIcon.title='Copy'; copyIcon.onclick=()=>{ navigator.clipboard.writeText(src); copyIcon.style.color='#4caf50'; setTimeout(()=>copyIcon.style.color='#888',800); };
-  const thumbsUp = document.createElement('i'); thumbsUp.className='fas fa-thumbs-up'; thumbsUp.title='Helpful';
-  const thumbsDown = document.createElement('i'); thumbsDown.className='fas fa-thumbs-down'; thumbsDown.title='Not helpful';
-  thumbsUp.onclick=()=>{ thumbsUp.style.color='#4caf50'; thumbsDown.style.color='#888'; };
-  thumbsDown.onclick=()=>{ thumbsDown.style.color='#f44336'; thumbsUp.style.color='#888'; };
-  footer.appendChild(copyIcon); footer.appendChild(thumbsUp); footer.appendChild(thumbsDown);
+  const copyIcon = document.createElement('i'); 
+  copyIcon.className = 'fas fa-copy';
+  copyIcon.title = 'Copy URL'; 
+  copyIcon.onclick = () => { 
+    navigator.clipboard.writeText(src); 
+    copyIcon.style.color = '#4caf50'; 
+    setTimeout(() => copyIcon.style.color = '#888', 800); 
+  };
+  const thumbsUp = document.createElement('i'); 
+  thumbsUp.className = 'fas fa-thumbs-up'; 
+  thumbsUp.title = 'Helpful';
+  const thumbsDown = document.createElement('i'); 
+  thumbsDown.className = 'fas fa-thumbs-down'; 
+  thumbsDown.title = 'Not helpful';
+  thumbsUp.onclick = () => { thumbsUp.style.color = '#4caf50'; thumbsDown.style.color = '#888'; };
+  thumbsDown.onclick = () => { thumbsDown.style.color = '#f44336'; thumbsUp.style.color = '#888'; };
+  footer.appendChild(copyIcon); 
+  footer.appendChild(thumbsUp); 
+  footer.appendChild(thumbsDown);
   section.appendChild(footer);
 
   chatArea.appendChild(section);
@@ -539,40 +586,59 @@ function addAIImage(src) {
    =============================== */
 function addLoading() {
   loadingMsg = document.createElement('div');
-  loadingMsg.className='ai-section';
-  const content = document.createElement('div'); content.className='ai-content';
-  content.textContent='Funmi is generating...';
+  loadingMsg.className = 'ai-section';
+  const content = document.createElement('div'); 
+  content.className = 'ai-content';
+  content.textContent = 'Funmi is generating...';
   loadingMsg.appendChild(content);
   chatArea.appendChild(loadingMsg);
   scrollDown();
 }
-function removeLoading(){ if(loadingMsg){ chatArea.removeChild(loadingMsg); loadingMsg=null; } }
+function removeLoading() { 
+  if (loadingMsg) { 
+    chatArea.removeChild(loadingMsg); 
+    loadingMsg = null; 
+  } 
+}
 
 /* ===============================
    Send Message
    =============================== */
 async function sendMessage() {
-  const text=input.value.trim(); if(!text) return;
-  welcome.style.display='none'; chatArea.style.display='block';
-  addUserMessage(text); input.value=''; input.style.height='auto'; addLoading();
+  const text = input.value.trim(); 
+  if (!text) return;
+  welcome.style.display = 'none'; 
+  chatArea.style.display = 'block';
+  addUserMessage(text); 
+  input.value = ''; 
+  input.style.height = 'auto'; 
+  addLoading();
 
   try {
-    if(!currentSessionId){
-      const s = await fetch(`${API_URL}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sessionName:currentMode}) });
+    if (!currentSessionId) {
+      const s = await fetch(`${API_URL}/session`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ sessionName: currentMode }) 
+      });
       currentSessionId = (await s.json())._id;
     }
 
-    const res = await fetch(`${API_URL}/message`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sessionId: currentSessionId, message: text, mode: currentMode }) });
+    const res = await fetch(`${API_URL}/message`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ sessionId: currentSessionId, message: text, mode: currentMode }) 
+    });
     const aiContent = (await res.json()).aiMessage?.content || '';
     removeLoading();
 
     const isImage = aiContent.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|webp)$/i.test(aiContent);
-    if(currentMode === 'Generate Image' && isImage){
+    if (currentMode === 'Generate Image' && isImage) {
       addAIImage(aiContent);
     } else {
       addAIText(aiContent);
     }
-  } catch(err) {
+  } catch (err) {
     removeLoading();
     console.error(err);
     addAIText('⚠ Something went wrong while generating the response.');
@@ -581,29 +647,52 @@ async function sendMessage() {
 
 sendBtn.onclick = sendMessage;
 input.addEventListener('keydown', e => {
-  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey) { 
+    e.preventDefault(); 
+    sendMessage(); 
+  }
 });
 document.addEventListener('click', e => {
-  if(!sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('open');
+  if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) 
+    sidebar.classList.remove('open');
 });
 
 /* ===============================
    Modal Close
    =============================== */
-modalClose.onclick = () => modal.style.display='none';
-modal.onclick = e => { if(e.target===modal) modal.style.display='none'; };
+modalClose.onclick = () => modal.style.display = 'none';
+modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
 
 /* ===============================
-   Initialize Session
+   Initialize Session & Initial Math Render
    =============================== */
-(async function init(){
-  try{
-    const r = await fetch(`${API_URL}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionName: currentMode }) });
+(async function init() {
+  try {
+    const r = await fetch(`${API_URL}/session`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ sessionName: currentMode }) 
+    });
     currentSessionId = (await r.json())._id;
-  } catch(e) {
+  } catch (e) {
     console.error('Session initialization failed', e);
   }
 })();
+
+// Initial math render on page load (useful if chat history is added later)
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.renderMathInElement && chatArea.children.length > 0) {
+    renderMathInElement(chatArea, {
+      delimiters: [
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\[ ", right: " \]", display: true }
+      ],
+      throwOnError: false,
+      strict: false
+    });
+  }
+});
 </script>
 </body>
 </html>
