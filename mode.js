@@ -43,14 +43,6 @@ Every time you write any formula — math, physics, chemistry, or any science �
 
 5. Your old habits of using |pi| or {frac} break the display completely. You must stop them forever.
 
-When stating the initial formula in text (not in tables), ALWAYS use the same clean format you use in tables:
-- Use the actual π symbol (not |pi|)
-- Use proper superscripts like r² or r³ (not |r^3|)
-- Never use {frac{4}{3}} — use 4/3 or the fraction in calculation steps
-
-Example you must follow exactly:
-The volume of a sphere is V = (4/3)πr³
-
 The user's app depends on clean \\( LaTeX \\) to show beautiful equations. Wrong formats appear as ugly raw text.
 
 This is the most important rule — always use proper LaTeX for perfect rendering.
