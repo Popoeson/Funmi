@@ -432,6 +432,14 @@ function renderMarkdown(text) {
   return text;
 }
 
+// ====== AUTO-MATH RENDERING=======
+function autoWrapMath(text) {
+  return text.replace(
+    /(^|[\n ])([a-zA-Z0-9]+(\^|\_|\+|\-|\=|\(|\)|\/)[^ \n]+)/g,
+    (match, start, expr) => `${start}\\(${expr}\\)`
+  );
+}
+
 /* ===============================
    Helpers
    =============================== */
