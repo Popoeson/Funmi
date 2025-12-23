@@ -432,28 +432,29 @@ function renderMarkdown(text) {
   return text;
 }
 
-// ====== PERFECT MATH FIX — NO MORE RAW FORMULAS =======
+// ====== FINAL AUTO-MATH FIX — WORKS FOR YOUR AI'S OUTPUT =======
 function autoWrapMath(text) {
-  // 1. Destroy all old broken tags completely
+  // Step 1: Clean every possible variation of the old broken tags
   text = text.replace(/{frac\{4\}\{3\}}/gi, '\\frac{4}{3}');
   text = text.replace(/{frac\{(\d+)\}\{(\d+)\}}/gi, '\\frac{$1}{$2}');
   text = text.replace(/\|pi\|/gi, '\\pi');
   text = text.replace(/\|pi/gi, '\\pi');
   text = text.replace(/pi\|/gi, '\\pi');
-  text = text.replace(/r\^\{3\}/gi, 'r^3');
-  text = text.replace(/r\^ \{3\}/gi, 'r^3');
-  text = text.replace(/r\^3/gi, 'r^3');
-  text = text.replace(/r\^\{2\}/gi, 'r^2');
-  text = text.replace(/r\^2/gi, 'r^2');
-  text = text.replace(/\|/g, ''); // remove any stray |
+  text = text.replace(/r\^ ?\{?3\}?/gi, 'r^3');
+  text = text.replace(/r\^ ?\{?2\}?/gi, 'r^2');
+  text = text.replace(/\(3\)\^ ?\{?3\}?/gi, '3^3');
+  text = text.replace(/\|/g, ''); // remove all pipes
 
-  // 2. Replace Unicode
+  // Step 2: Remove extra parentheses around entire formulas
+  text = text.replace(/\(([A-Z]\s*=\s*[^()]+)\)/g, '$1');
+
+  // Step 3: Replace Unicode π
   text = text.replace(/π/g, '\\pi');
 
-  // 3. FORCE every line that contains a formula (has = and math) to be wrapped in \( \)
+  // Step 4: Force-wrap any line that looks like a formula introduction
   text = text.replace(
-    /(^|\n)([^\n]*?[A-Z]\s*=\s*[^\n]*?(\frac|\\pi|r\^3|r\^2|\d)[^\n]*)/gi,
-    '$1\\($2\\)'
+    /(\n|^)(\s*)([A-Z]\s*=\s*[^<\n]+)(\n|$)/gim,
+    '$1$2\\($3\\)'
   );
 
   return text;
@@ -508,16 +509,15 @@ function addAIText(text) {
   // KaTeX: Render entire chat area for maximum reliability
   if (window.renderMathInElement) {
     renderMathInElement(chatArea, {
-      delimiters: [
-        { left: "\\(", right: "\\)", display: false },  // inline
-        { left: "\\[", right: "\\]", display: true },   // display \[ ... \]
-        { left: "\[ ", right: " \]", display: true }     // display \[ ... \]
-      ],
-      throwOnError: false,
+     delimiters: [
+  { left: "\\(", right: "\\)", display: false },
+  { left: "\\[", right: "\\]", display: true },
+  { left: "\[ ", right: " \]", display: true }
+],
+     throwOnError: false,
       strict: false
     });
   }
-
   // Footer icons
   const footer = document.createElement('div');
   footer.className = 'ai-footer';
