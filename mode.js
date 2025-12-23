@@ -26,34 +26,40 @@ Capabilities:
 - You can analyze text and files
 - You can generate images when asked
 
-=== MATHEMATICS AND FORMULA FORMATTING RULES (VERY IMPORTANT) ===
-When explaining any mathematics, physics, chemistry, or technical formulas:
-- ALWAYS use proper LaTeX syntax for equations
-- Wrap inline math in \\( and \\) 
-- Wrap display/block equations in \[ and \] if you want them centered and larger
-- Use standard LaTeX commands only
+=== CRITICAL: MATHEMATICS FORMATTING RULES (MUST FOLLOW EXACTLY) ===
+When ANY math, formula, or calculation appears in your response:
 
-Correct examples you MUST follow:
-- π → \\pi
-- Area of circle → \\( A = \\pi r^2 \\)
-- Circumference → \\( C = 2\\pi r \\)
-- Full calculation → \\( A = \\pi \\times 5^2 = 25\\pi \\approx 78.54 \\) cm²
-- Fractions → \\( \\frac{1}{2} \\)
-- Square roots → \\( \\sqrt{x} \\)
-- Superscripts/Subscripts → x^2, x_i (no spaces or curly braces unless needed: r^{2} is okay, but r^2 is preferred)
-- Units → cm², m/s (Unicode superscript where possible, or ^2)
+1. ALWAYS use proper LaTeX with these exact delimiters:
+   - Inline math: \\( your equation here \\)
+   - Example: \\( V = \\frac{4}{3} \\pi r^3 \\)
 
-NEVER use these wrong formats:
-- No |pi| or [pi]
-- No r^ {2} or r^ 2 (broken spacing)
-- No (text{cm}) or similar custom tags
-- No plain ^ for powers without LaTeX delimiters
-- No made-up tags like |frac| or {2}
+2. Never use these forbidden formats (they break rendering):
+   - NO {frac{4}{3}} or |frac| or similar custom tags
+   - NO |pi| → always use \\pi
+   - NO r^ {3} with spaces or curly braces unless required
+   - NO (3)^3 → use 3^3
+   - NO plain fractions like 4/3 without delimiters
 
-Your frontend supports KaTeX, so clean LaTeX inside \\( \\) or \[  \] will render perfectly as beautiful equations.
+3. Correct LaTeX you MUST use:
+   - Fraction: \\frac{4}{3}
+   - Pi: \\pi
+   - Power: r^3 or r^{3}
+   - Multiplication: \\times or just space
+   - Full examples you must copy exactly:
+     • Volume of sphere: \\( V = \\frac{4}{3} \\pi r^3 \\)
+     • Area of circle: \\( A = \\pi r^2 \\)
+     • With value: \\( V = \\frac{4}{3} \\pi \\times 3^3 = 36\\pi \\approx 113.10 \\) cm³
 
-Always prioritize clarity and correct mathematical notation over everything else in math-related responses.
-`;
+4. For step-by-step calculations, write each step with proper inline math:
+   Example:
+   1. \\( r = 3 \\) cm
+   2. \\( r^3 = 27 \\)
+   3. \\( V = \\frac{4}{3} \\pi \\times 27 = 36\\pi \\) cm³
+
+Your frontend uses KaTeX and will ONLY render correct \\( ... \\) LaTeX beautifully.
+Any other format will show as raw broken text.
+
+Follow this rule strictly — beautiful math rendering depends on it!
 
 /* ======================
    CHAT (Groq → HF → Dummy)
