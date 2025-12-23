@@ -435,16 +435,20 @@ function renderMarkdown(text) {
 }
 
 // ====== FINAL AUTO-MATH FIX =======
+
 function autoWrapMath(text) {
 
   // Normalize unicode
   text = text.replace(/π/g, '\\pi');
 
+  // Split chained math into steps
+  text = text.replace(/⟹|⇒/g, '\n');
+
+  // Break long equal chains into lines
+  text = text.replace(/=\s*/g, '=\n');
+
   // Fix broken fractions
   text = text.replace(/\\frac\s*{\s*(\d+)\s*}\s*{\s*(\d+)\s*}/g, '\\frac{$1}{$2}');
-
-  // Fix missing math context for \text{}
-  text = text.replace(/\\text\{([^}]+)\}/g, '\\,\\text{$1}');
 
   // Split into lines
   const lines = text.split('\n');
@@ -452,7 +456,6 @@ function autoWrapMath(text) {
   const processed = lines.map(line => {
     const trimmed = line.trim();
 
-    // Skip empty or already wrapped math
     if (
       trimmed === '' ||
       trimmed.startsWith('\\(') ||
@@ -462,12 +465,12 @@ function autoWrapMath(text) {
       return line;
     }
 
-    // Heuristic: line is math-heavy
+    // Detect math-heavy lines
     const mathScore =
       (trimmed.match(/[=^_\\]/g) || []).length +
       (trimmed.match(/\d/g) || []).length;
 
-    if (mathScore >= 3 && !/[a-zA-Z]{3,}/.test(trimmed)) {
+    if (mathScore >= 2 && !/[a-zA-Z]{3,}/.test(trimmed)) {
       return `\\[${trimmed}\\]`;
     }
 
