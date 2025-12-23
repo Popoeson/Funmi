@@ -641,42 +641,57 @@ function removeLoading() {
 }
 
 /* ===============================
-   Send Message
+   Send Message (Enhanced for Images)
    =============================== */
 async function sendMessage() {
-  const text = input.value.trim(); 
+  const text = input.value.trim();
   if (!text) return;
-  welcome.style.display = 'none'; 
+
+  welcome.style.display = 'none';
   chatArea.style.display = 'block';
-  addUserMessage(text); 
-  input.value = ''; 
-  input.style.height = 'auto'; 
+  addUserMessage(text);
+  input.value = '';
+  input.style.height = 'auto';
   addLoading();
 
   try {
+    // Initialize session if none
     if (!currentSessionId) {
-      const s = await fetch(`${API_URL}/session`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ sessionName: currentMode }) 
+      const s = await fetch(`${API_URL}/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionName: currentMode })
       });
       currentSessionId = (await s.json())._id;
     }
 
-    const res = await fetch(`${API_URL}/message`, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ sessionId: currentSessionId, message: text, mode: currentMode }) 
+    // Send message to API
+    const res = await fetch(`${API_URL}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: currentSessionId, message: text, mode: currentMode })
     });
-    const aiContent = (await res.json()).aiMessage?.content || '';
+
+    let aiContent = (await res.json()).aiMessage?.content || '';
     removeLoading();
 
-    const isImage = aiContent.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|webp)$/i.test(aiContent);
+    // === IMAGE HANDLING ===
+    aiContent = aiContent.trim();
+
+    // If raw base64 returned without data:image prefix
+    if (/^[A-Za-z0-9+/=]+$/.test(aiContent)) {
+      aiContent = `data:image/png;base64,${aiContent}`;
+    }
+
+    const isImage = aiContent.startsWith('data:image/') ||
+                    /^https?:\/\/.*\.(png|jpg|jpeg|webp)$/i.test(aiContent);
+
     if (currentMode === 'Generate Image' && isImage) {
       addAIImage(aiContent);
     } else {
       addAIText(aiContent);
     }
+
   } catch (err) {
     removeLoading();
     console.error(err);
@@ -684,11 +699,12 @@ async function sendMessage() {
   }
 }
 
+// Event listeners
 sendBtn.onclick = sendMessage;
 input.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { 
-    e.preventDefault(); 
-    sendMessage(); 
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
   }
 });
 document.addEventListener('click', e => {
