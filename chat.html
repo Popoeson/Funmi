@@ -432,37 +432,30 @@ function renderMarkdown(text) {
   return text;
 }
 
-// ====== FINAL AUTO-MATH FIX — GUARANTEED TO CLEAN ALL BROKEN FORMATS =======
+// ====== FINAL WORKING AUTO-MATH FIX (Simple & Safe) =======
 function autoWrapMath(text) {
-  // Step 1: Fix ALL known broken custom tags (exact patterns from screenshots)
-  text = text.replace(/{frac\{(\d+)\}\{(\d+)\}}/gi, '\\frac{$1}{$2}');     // {frac{4}{3}} → \frac{4}{3}
-  text = text.replace(/\|pi\|/gi, '\\pi');                                  // |pi| → \pi
-  text = text.replace(/\|r\^3\|/gi, 'r^3');                                 // |r^3| → r^3
-  text = text.replace(/\|r\^2\|/gi, 'r^2');                                 // |r^2| → r^2
-  text = text.replace(/\|([A-Za-z]+)\^(\d+)\|/gi, '$1^$2');                  // |V^3|, |x^2| → V^3, x^2
-  text = text.replace(/\|([^|]+)\|/gi, '$1');                               // Strip any leftover |tags|
+  // 1. Fix all broken custom tags
+  text = text.replace(/{frac\{(\d+)\}\{(\d+)\}}/gi, '\\frac{$1}{$2}');
+  text = text.replace(/\|pi\|/gi, '\\pi');
+  text = text.replace(/\|r\^3\|/gi, 'r^3');
+  text = text.replace(/\|r\^2\|/gi, 'r^2');
+  text = text.replace(/\|([A-Za-z]+)\^(\d+)\|/gi, '$1^$2');
+  text = text.replace(/\|([^|]+)\|/gi, '$1');  // remove any remaining |tags|
 
-  // Step 2: Clean stray pipes and spacing
-  text = text.replace(/\s*\|\s*/g, ' ');
-
-  // Step 3: Unicode symbols
+  // 2. Unicode fixes
   text = text.replace(/π/g, '\\pi');
   text = text.replace(/≈/g, '\\approx');
-  text = text.replace(/±/g, '\\pm');
-  text = text.replace(/∞/g, '\\infty');
 
-  // Step 4: Wrap full formula lines like "V = \frac{4}{3} \pi r^3" if not already delimited
+  // 3. Wrap common formula lines that start with "V =", "A =", "C =", etc.
+  // Only if they don't already have delimiters
   text = text.replace(
-    /(\n|^)(\s*)([A-Z][a-z]? \s*=\s*.+?)(?=\n|$)/g,
-    (match, newline, spaces, formula) => {
-      if (formula.includes('\\(') || formula.includes('$$')) return match;
-      return `\( {newline} \){spaces}\\(${formula.trim()}\\)`; 
-    }
+    /^(\s*)([A-Z]\s*=\s*[^<\n]+)$/gim,
+    '$1\\($2\\)'
   );
 
-  // Step 5: Safe wrap for powers and fractions
-  text = text.replace(/(?<!(?:\\|\$\$|\\\[|\\\(|\$))([A-Za-z]\w*)\^(\{)?([^}{ \n]+)(\})?/g, '\\($1^$3\\)');
-  text = text.replace(/(?<!(?:\\|\$\$|\\\[|\\\(|\$))(\d+)\/(\d+)/g, '\\($1/$2\\)');
+  // 4. Wrap bare powers and fractions
+  text = text.replace(/([A-Za-z])\^(\d+)/g, '\\($1^$2\\)');
+  text = text.replace(/(\d+)\/(\d+)/g, '\\($1/$2\\)');
 
   return text;
 }
@@ -503,8 +496,8 @@ function addAIText(text) {
   const content = document.createElement('div');
   content.className = 'ai-content';
 
-  const processedText = autoWrapMath(text);
-  content.innerHTML = renderMarkdown(processedText);
+  content.innerHTML = renderMarkdown(text);        // First markdown (protects existing \( \))
+content.innerHTML = autoWrapMath(content.innerHTML);  // Then fix broken tags and wrap new ones
 
   section.appendChild(content);
   chatArea.appendChild(section);
