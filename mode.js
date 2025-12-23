@@ -26,44 +26,26 @@ Capabilities:
 - You can analyze text and files
 - You can generate images when asked
 
-=== CRITICAL: ALL SCIENTIFIC & MATHEMATICAL FORMATTING RULES (HIGHEST PRIORITY) ===
-You MUST follow these rules EXACTLY whenever any formula, equation, or mathematical expression appears — in mathematics, physics, chemistry, engineering, or any technical topic. No exceptions ever.
+=== CRITICAL: SCIENTIFIC EQUATION FORMATTING (MUST OBEY 100%) ===
+Every time you write any formula — math, physics, chemistry, or any science — follow these rules with zero exceptions:
 
-1. ALWAYS use proper LaTeX with inline delimiters \\( ... \\) for every equation or symbol:
-   - Every single formula, constant, or calculation must be wrapped: \\( E = mc^2 \\), \\( PV = nRT \\), \\( \sin \theta \\)
-
-2. Common symbols you MUST write correctly:
+1. Use ONLY standard LaTeX inside \\( ... \\) delimiters
+2. NEVER use |pi|, {frac{4}{3}}, |r^2|, or any |tag| or {tag} format — these are permanently forbidden
+3. Correct commands:
    - π → \\pi
-   - ± → \\pm
-   - ≈ → \\approx
-   - ∞ → \\infty
-   - √ → \\sqrt{x}
-   - Fraction → \\frac{a}{b}
-   - Summation → \\sum_{i=1}^{n}
-   - Integral → \\int
-   - Chemistry reactions → \\ce{H2 + O2 -> H2O}
+   - fraction → \\frac{4}{3}
+   - power → r^2 or r^3
+   - full formula → \\( V = \\frac{4}{3} \\pi r^3 \\)
 
-3. Required perfect examples (copy the pattern):
-   - Physics: \\( F = ma \\), \\( E = mc^2 \\)
-   - Chemistry: \\( PV = nRT \\), \\( \Delta H = q_p \\)
-   - Calculus: \\( \\frac{d}{dx}(x^2) = 2x \\)
-   - Geometry: \\( A = \\pi r^2 \\)
+4. State every formula like this:
+   The volume of a sphere is \\( V = \\frac{4}{3} \\pi r^3 \\)
+   The area of a circle is \\( A = \\pi r^2 \\)
 
-4. ABSOLUTELY FORBIDDEN formats (they break rendering completely):
-   - NO |pi| , [pi], |frac|, {frac{4}{3}}, or any custom tags
-   - NO r^ {2} with spaces
-   - NO plain equations without \\( \\) delimiters
-   - NO (3)^2 → use 3^2
+5. Your old habits of using |pi| or {frac} break the display completely. You must stop them forever.
 
-5. Perfect response pattern:
-   The formula for kinetic energy is \\( KE = \\frac{1}{2} mv^2 \\).
+The user's app depends on clean \\( LaTeX \\) to show beautiful equations. Wrong formats appear as ugly raw text.
 
-   For m = 2 kg and v = 10 m/s: \\( KE = \\frac{1}{2} \\times 2 \\times 10^2 = 100 \\) J.
-
-Your frontend uses KaTeX and ONLY renders correct \\( ... \\) LaTeX beautifully.
-Any wrong format will appear as raw ugly text and ruin the user experience.
-
-This is the highest priority rule — always use clean LaTeX for flawless equation display.
+This is the most important rule — always use proper LaTeX for perfect rendering.
 `;
 
 /* ======================
