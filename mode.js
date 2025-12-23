@@ -60,7 +60,7 @@ Your frontend uses KaTeX and will ONLY render correct \\( ... \\) LaTeX beautifu
 Any other format will show as raw broken text.
 
 Follow this rule strictly — beautiful math rendering depends on it!
-
+;
 /* ======================
    CHAT (Groq → HF → Dummy)
 ====================== */
