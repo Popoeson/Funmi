@@ -641,7 +641,7 @@ function removeLoading() {
 }
 
 /* ===============================
-   Send Message (Enhanced for Images)
+   Send Message (Enhanced with Auto-Mode Detection)
    =============================== */
 async function sendMessage() {
   const text = input.value.trim();
@@ -655,6 +655,21 @@ async function sendMessage() {
   addLoading();
 
   try {
+    // ===== Auto Intent Detection (Frontend Mirror of routes.js) =====
+    if (!currentMode || currentMode === 'Default') {
+      const inputLower = text.toLowerCase();
+      if (/generate|draw|create|image|picture|illustration/.test(inputLower)) {
+        currentMode = 'Generate Image';
+      } else if (/analyze|summarize|check tone|extract/.test(inputLower)) {
+        currentMode = 'Analyze Files';
+      } else if (/search|find|look up|what is|who is|how to/.test(inputLower)) {
+        currentMode = 'Web Search';
+      } else {
+        currentMode = 'Default';
+      }
+    }
+    // =================================================================
+
     // Initialize session if none
     if (!currentSessionId) {
       const s = await fetch(`${API_URL}/session`, {
@@ -675,10 +690,9 @@ async function sendMessage() {
     let aiContent = (await res.json()).aiMessage?.content || '';
     removeLoading();
 
-    // === IMAGE HANDLING ===
     aiContent = aiContent.trim();
 
-    // If raw base64 returned without data:image prefix
+    // Handle raw Base64 image (no prefix)
     if (/^[A-Za-z0-9+/=]+$/.test(aiContent)) {
       aiContent = `data:image/png;base64,${aiContent}`;
     }
