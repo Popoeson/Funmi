@@ -472,7 +472,8 @@ function addAIText(text) {
   section.className = 'ai-section';
   const content = document.createElement('div');
   content.className = 'ai-content';
-  content.innerHTML = renderMarkdown(text);
+  const processedText = autoWrapMath(text);
+  content.innerHTML =        renderMarkdown(processedText);
   section.appendChild(content);
   chatArea.appendChild(section);
   scrollDown();
