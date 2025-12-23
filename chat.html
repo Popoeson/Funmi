@@ -512,35 +512,42 @@ function addAIText(text) {
       strict: false
     });
   }
-}
-  // Footer icons
+
+  // ===============================
+  // Footer icons (GPT-style)
+  // ===============================
   const footer = document.createElement('div');
   footer.className = 'ai-footer';
-  const copyIcon = document.createElement('i'); 
+
+  const copyIcon = document.createElement('i');
   copyIcon.className = 'fas fa-copy';
-  copyIcon.title = 'Copy'; 
-  copyIcon.onclick = () => { 
-    navigator.clipboard.writeText(text); 
-    copyIcon.style.color = '#4caf50'; 
-    setTimeout(() => copyIcon.style.color = '#888', 800); 
+  copyIcon.title = 'Copy';
+  copyIcon.onclick = () => {
+    navigator.clipboard.writeText(text);
+    copyIcon.style.color = '#4caf50';
+    setTimeout(() => copyIcon.style.color = '#888', 800);
   };
-  const thumbsUp = document.createElement('i'); 
-  thumbsUp.className = 'fas fa-thumbs-up'; 
+
+  const thumbsUp = document.createElement('i');
+  thumbsUp.className = 'fas fa-thumbs-up';
   thumbsUp.title = 'Helpful';
-  const thumbsDown = document.createElement('i'); 
-  thumbsDown.className = 'fas fa-thumbs-down'; 
+  thumbsUp.onclick = () => {
+    thumbsUp.style.color = '#4caf50';
+    thumbsDown.style.color = '#888';
+  };
+
+  const thumbsDown = document.createElement('i');
+  thumbsDown.className = 'fas fa-thumbs-down';
   thumbsDown.title = 'Not helpful';
-  thumbsUp.onclick = () => { 
-    thumbsUp.style.color = '#4caf50'; 
-    thumbsDown.style.color = '#888'; 
+  thumbsDown.onclick = () => {
+    thumbsDown.style.color = '#f44336';
+    thumbsUp.style.color = '#888';
   };
-  thumbsDown.onclick = () => { 
-    thumbsDown.style.color = '#f44336'; 
-    thumbsUp.style.color = '#888'; 
-  };
-  footer.appendChild(copyIcon); 
-  footer.appendChild(thumbsUp); 
+
+  footer.appendChild(copyIcon);
+  footer.appendChild(thumbsUp);
   footer.appendChild(thumbsDown);
+
   section.appendChild(footer);
 }
 
