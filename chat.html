@@ -507,8 +507,11 @@ function addAIText(text) {
   const content = document.createElement('div');
   content.className = 'ai-content';
 
-  content.innerHTML = renderMarkdown(text);        // First markdown (protects existing \( \))
-content.innerHTML = autoWrapMath(content.innerHTML);  // Then fix broken tags and wrap new ones
+  // First: render markdown (tables, headings, code blocks) and protect existing LaTeX
+  content.innerHTML = renderMarkdown(text);
+
+  // Second: fix broken math tags and add missing delimiters
+  content.innerHTML = autoWrapMath(content.innerHTML);
 
   section.appendChild(content);
   chatArea.appendChild(section);
@@ -518,9 +521,9 @@ content.innerHTML = autoWrapMath(content.innerHTML);  // Then fix broken tags an
   if (window.renderMathInElement) {
     renderMathInElement(chatArea, {
       delimiters: [
-        { left: "\\(", right: "\\)", display: false },
-        { left: "\\[", right: "\\]", display: true },
-        { left: "\[ ", right: " \]", display: true }
+        { left: "\\(", right: "\\)", display: false },  // inline
+        { left: "\\[", right: "\\]", display: true },   // display \[ ... \]
+        { left: "\[ ", right: " \]", display: true }     // display \[ ... \]
       ],
       throwOnError: false,
       strict: false
